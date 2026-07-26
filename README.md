@@ -1,6 +1,6 @@
 # Credential Airlock
 
-[![CI](https://github.com/classeve-public/credential-airlock/actions/workflows/ci.yml/badge.svg)](https://github.com/classeve-public/credential-airlock/actions/workflows/ci.yml)
+[![CI](https://github.com/Classevelabs/credential-airlock/actions/workflows/ci.yml/badge.svg)](https://github.com/Classevelabs/credential-airlock/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Security policy](https://img.shields.io/badge/security-policy-informational.svg)](SECURITY.md)
 
@@ -136,7 +136,7 @@ never changes - it only ever knew the dummy.
 For source development:
 
 ```powershell
-git clone https://github.com/classeve-public/credential-airlock
+git clone https://github.com/Classevelabs/credential-airlock
 cd credential-airlock
 npm install
 npm run build
