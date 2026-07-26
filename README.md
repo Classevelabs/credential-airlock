@@ -8,8 +8,12 @@
 Your agents never hold your real API keys. The real keys are sealed to this
 machine. Every outbound request is policy-checked and audited before it leaves.
 
-Built and maintained by **Classeve**. Windows-first. Node/TypeScript. You run
-it; Classeve never sees your credentials.
+Built and maintained by **ClassEve**. Windows-first. Node/TypeScript. You run
+it; ClassEve never sees your credentials.
+
+> **Official repository.** This is the only official repository for Credential Airlock.
+> ClassEve's complete list of official accounts is at [classeve.com/official](https://classeve.com/official).
+> The GitHub account `github.com/ClassEve` is an unrelated third party, not affiliated with ClassEve.
 
 > **Status: public initial release for single-operator and trusted-team use. Not yet third-party audited.**
 > See [Before you put this in front of other people's credentials](#before-you-put-this-in-front-of-other-peoples-credentials) before you put it
@@ -510,7 +514,7 @@ this in front of someone else's credentials:
       stays loopback-only; there is deliberately no reveal route.
 - [ ] **Third-party pentest before any public security claim.**
 
-Until the external pentest is done, market it as exactly what it is: a Classeve
+Until the external pentest is done, market it as exactly what it is: a ClassEve
 open-source, self-hosted credential firewall for your own agents and trusted
 teams, with honest limits.
 
@@ -561,5 +565,5 @@ guarantee, overdeliver the execution.
 
 ## License
 
-Apache-2.0. Copyright 2026 Classeve. Created by Ranjit Barnala. See
+Apache-2.0. Copyright 2026 ClassEve. Created by Ranjit Barnala. See
 [LICENSE](LICENSE) and [NOTICE](NOTICE.md).
