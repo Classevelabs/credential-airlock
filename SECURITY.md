@@ -38,7 +38,7 @@ Preferred: open a private report via GitHub Security Advisories:
 <https://github.com/classeve-public/credential-airlock/security/advisories/new>
 
 If you cannot use GitHub advisories, email the maintainer privately at
-**ranjitbarnala0@gmail.com**. This inbox is monitored for security reports; for
+**security@classeve.com**. This inbox is monitored for security reports; for
 anything sensitive, ask in your first message and we will arrange an encrypted
 channel before you send details.
 
