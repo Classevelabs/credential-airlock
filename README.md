@@ -565,5 +565,5 @@ guarantee, overdeliver the execution.
 
 ## License
 
-Apache-2.0. Copyright 2026 ClassEve. Created by Ranjit Barnala. See
+Apache-2.0. Copyright 2026 ClassEve. See
 [LICENSE](LICENSE) and [NOTICE](NOTICE.md).
