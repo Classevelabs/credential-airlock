@@ -3,10 +3,7 @@
   "version": "0.1.1",
   "description": "A self-hosted, OS-sealed credential firewall for AI agents (DPAPI/Keychain/passphrase; not a hardware TPM). The agent never holds real keys.",
   "license": "Apache-2.0",
-  "author": "Classeve",
-  "contributors": [
-    "Ranjit Barnala"
-  ],
+  "author": "ClassEve",
   "homepage": "https://github.com/classeve-public/credential-airlock#readme",
   "repository": {
     "type": "git",
