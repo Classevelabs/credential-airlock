@@ -59,7 +59,9 @@ export function generateCA(): CaMaterial {
 
 export class CertAuthority {
   private caCert: forge.pki.Certificate;
-  private caKey: forge.pki.PrivateKey;
+  // RSA specifically, not the wider PrivateKey union: createCa() mints this key
+  // with pki.rsa.generateKeyPair, and cert.sign() only accepts an RSA key.
+  private caKey: forge.pki.rsa.PrivateKey;
   private leafKeys: forge.pki.rsa.KeyPair;
   private leafPublicPem: string;
   private leafPrivatePem: string;
@@ -67,7 +69,9 @@ export class CertAuthority {
 
   constructor(material: CaMaterial) {
     this.caCert = pki.certificateFromPem(material.certPem);
-    this.caKey = pki.privateKeyFromPem(material.keyPem);
+    // privateKeyFromPem is declared as returning the union (it can also hand
+    // back an ed25519 key); this CA's PEM is always the RSA key from createCa().
+    this.caKey = pki.privateKeyFromPem(material.keyPem) as forge.pki.rsa.PrivateKey;
     // One shared leaf keypair for all intercepted hosts -> cheap per-host minting.
     this.leafKeys = pki.rsa.generateKeyPair(2048);
     this.leafPublicPem = pki.publicKeyToPem(this.leafKeys.publicKey);
