@@ -48,7 +48,7 @@ if (pkg.private === true) errors.push('package must not be private for public np
 if (pkg.name !== 'credential-airlock') errors.push('package name must be credential-airlock');
 if (!pkg.version) errors.push('package version is required');
 if (pkg.license !== 'Apache-2.0') errors.push('license must stay Apache-2.0');
-if (pkg.author !== 'Classeve') errors.push('author must be Classeve');
+if (pkg.author !== 'ClassEve') errors.push('author must be ClassEve');
 if (!pkg.repository?.url?.includes('github.com/classeve-public/credential-airlock')) errors.push('repository.url must point at classeve-public/credential-airlock');
 if (!pkg.homepage?.includes('github.com/classeve-public/credential-airlock')) errors.push('homepage must point at classeve-public/credential-airlock');
 if (!pkg.bugs?.url?.includes('github.com/classeve-public/credential-airlock/issues')) errors.push('bugs.url must point at classeve-public/credential-airlock/issues');
