@@ -24,6 +24,46 @@ export interface Injector {
   placeholder: string;
 }
 
+/**
+ * A vault is only openable if this build understands its format.
+ *
+ * `version` was written on create and then never read, so any future format
+ * change would have been silent: an old vault would open and be interpreted as
+ * the new shape, and a vault written by a newer build would open under an older
+ * one. On a credential store that is the worst failure mode available — nothing
+ * throws, the misreading is persisted by the next write, and the original bytes
+ * are gone.
+ *
+ * Refusing is the safe answer in both directions. A vault from the future can
+ * only be handled by the build that wrote it; a vault with no recognisable
+ * version is not a vault this code should be guessing about. Older versions
+ * would be migrated here — none exist yet, and when the first one does, this is
+ * the single place that has to learn about it.
+ *
+ * Throws without touching the file: the caller must be able to downgrade,
+ * restore a backup, or upgrade and try again against untouched bytes.
+ */
+function assertOpenableVersion(data: VaultData | null | undefined): void {
+  const v = data?.version;
+  if (typeof v !== 'number' || !Number.isInteger(v) || v < 1) {
+    throw new Error(
+      'vault.enc is not a recognisable vault: its format version is missing or invalid. ' +
+      'Refusing to open rather than guess at the layout of a credential store. ' +
+      'Restore from a backup (`airlock backup restore`) or re-run `airlock init` on a fresh data directory.',
+    );
+  }
+  if (v > VAULT_VERSION) {
+    throw new Error(
+      `this vault was written by a newer credential-airlock (vault format version ${v}; ` +
+      `this build understands up to ${VAULT_VERSION}). Refusing to open it — reading a newer ` +
+      'format as an older one would silently corrupt your secrets on the next write. ' +
+      'Upgrade credential-airlock to the version that wrote this vault.',
+    );
+  }
+  // v < VAULT_VERSION: no older format exists yet. When one does, migrate here
+  // — and write the migration so it is reversible before it persists anything.
+}
+
 export class Vault {
   private constructor(
     private readonly p: Paths,
@@ -67,6 +107,7 @@ export class Vault {
     } finally {
       plain.fill(0); // minimize how long the decrypted vault lives in memory
     }
+    assertOpenableVersion(data);
     const v = new Vault(p, vdk, data);
     v.registerAllRedactions();
     return v;
