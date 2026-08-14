@@ -40,6 +40,12 @@ jobs:
           languages: javascript-typescript
           build-mode: none
           queries: security-and-quality
+          # Test fixtures deliberately do unsafe things - a predictable RNG, a
+          # crafted property name - because that is what they are testing. None
+          # of it ships. Leaving them in buries the findings that do ship.
+          config: |
+            paths-ignore:
+              - 'test/**'
 
       - name: Analyse
         uses: github/codeql-action/analyze@v3
