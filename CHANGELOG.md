@@ -6,6 +6,48 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-08-14
+
+### Security
+- **A launched agent no longer inherits the operator's other credentials.**
+  `sanitizedEnv()` removed exactly one thing: the `AIRLOCK_*` namespace. That
+  protected the vault passphrase and nothing else, so every third-party secret
+  the operator happened to have exported was handed straight to the untrusted
+  child — `SUPABASE_SERVICE_ROLE_KEY` (a full row-level-security bypass),
+  `OPENAI_API_KEY`, `GITHUB_TOKEN`, AWS keys, database URLs with inline
+  passwords. The product's claim is that the agent is handed placeholders
+  instead of real keys; that was true only of the secrets the airlock itself
+  injected, which is the narrower half of the problem. Names are now matched
+  three ways (exact, word-anchored, and run-together substrings such as
+  `..._AUTHTOKEN`, which a boundary anchor misses), a bare `_KEY` suffix is
+  covered because value shape cannot catch opaque random bytes, and the VALUE is
+  read as well — a denylist cannot be completed, so a key stored as `STRIPE_SK`
+  or `MY_CORP_XYZ` is recognised by its own format. Credential-bearing `*_URL`
+  values and database DSNs are stripped too.
+- **Code-injection variables are stripped from child environments.**
+  `NODE_OPTIONS`, `NODE_PATH`, `LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`,
+  `BASH_ENV`, `ENV`, `RUBYOPT` and `PERL5OPT` are not secrets; they turn "spawn
+  this command" into "spawn this command plus whatever I like", which matters
+  precisely because the thing being spawned is untrusted.
+
+### Changed
+- The `_KEY` rule has a cost and it is stated rather than hidden: `PARTITION_KEY`,
+  `SORT_KEY`, `PRIMARY_KEY` and `ROW_KEY` are database field names and are now
+  stripped from a launched agent's ambient environment as well. For a credential
+  firewall that is the right side to err on — a `*_KEY` variable in the daemon's
+  environment is far more likely to be a live secret than a schema hint, and the
+  cost of the opposite mistake is a leaked service-role key. An agent that
+  genuinely needs a field name receives it through its profile `env`, which is an
+  explicit operator choice and is never filtered.
+- `TOKENIZERS_PARALLELISM` is carved out by name so a working HuggingFace agent
+  does not change behaviour for no security gain. `KEYBOARD_LAYOUT`,
+  `MONKEY_PATCH`, `AUTHORITY_URL` and `RAPIDLY` are asserted to survive.
+
+### Added
+- `test/env-scrub.mjs`, 45 assertions grouped by the mechanism that catches each
+  case. Run against the previous sanitizer it fails 32 of them, which is the
+  measure of what was reaching the child.
+
 ## [0.1.2] - 2026-08-14
 
 ### Security
