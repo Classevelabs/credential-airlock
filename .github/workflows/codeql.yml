@@ -1,0 +1,47 @@
+name: CodeQL
+
+# This proxy holds the real credentials the agent is never allowed to see, so
+# the interesting bugs here are not crashes — they are a secret reaching a log
+# line, an allow-list check that can be walked past with a crafted host, or a
+# response body echoing back what it just injected. Taint analysis is the only
+# check that looks for those without being told where to look.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "42 4 * * 3"
+  workflow_dispatch:
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyse TypeScript
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    permissions:
+      security-events: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialise CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          build-mode: none
+          queries: security-and-quality
+
+      - name: Analyse
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:javascript-typescript
