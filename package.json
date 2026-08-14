@@ -1,16 +1,16 @@
 {
   "name": "credential-airlock",
   "version": "0.1.2",
-  "description": "A self-hosted, OS-sealed credential firewall for AI agents (DPAPI/Keychain/passphrase; not a hardware TPM). The agent never holds real keys.",
+  "description": "A self-hosted credential firewall for AI agents: placeholders instead of real keys, deny-by-default egress, and an audit log. Secrets are sealed at rest by the OS (DPAPI/Keychain/passphrase, not a TPM). Contains a misled agent, not code running as the same OS user.",
   "license": "Apache-2.0",
   "author": "ClassEve",
-  "homepage": "https://github.com/classeve-public/credential-airlock#readme",
+  "homepage": "https://github.com/Classevelabs/credential-airlock#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/classeve-public/credential-airlock.git"
+    "url": "git+https://github.com/Classevelabs/credential-airlock.git"
   },
   "bugs": {
-    "url": "https://github.com/classeve-public/credential-airlock/issues"
+    "url": "https://github.com/Classevelabs/credential-airlock/issues"
   },
   "keywords": [
     "ai",
