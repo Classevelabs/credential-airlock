@@ -6,6 +6,38 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-08-14
+
+### Security
+- **The proxy's request target is normalised before the policy reads it.** An
+  absolute-form target went to the policy engine verbatim, so dot-segments,
+  duplicate slashes and percent-encoded unreserved characters each described one
+  resource to the proxy and a different one to the origin. Five spellings of the
+  same path evaded a path-scoped rule and fell through to the auto-generated
+  host-wide allow — with the credential injected. The normalised value is now
+  what both the policy check and the forwarded request see, so the two views
+  cannot diverge. Userinfo in a proxy target is rejected outright rather than
+  stripped. `https://` absolute-form targets keep going through the
+  TLS-verified upstream path; they are not downgraded to a cleartext dial.
+- **An amount the proxy cannot read is a denial, not a gap.** A body of
+  `amount=1&amount=999999` is ambiguous by construction — `URLSearchParams.get`
+  takes the first value, Stripe/Rack/PHP/Rails take the last — and the reader
+  returned "no amount" for it, indistinguishable from a request that simply had
+  none. An attacker-supplied `?amount=1` was then accepted in its place and the
+  cap was bypassed. Reads now distinguish absent from refused, and a refusal
+  denies. A body and query that are both readable but disagree also deny: this
+  proxy shows the amount to a human for approval and writes it to the audit log,
+  so a request with two different answers has none that can honestly be shown,
+  whichever value the cap would permit on its own.
+
+### Changed
+- The amount cap is still enforced against every location the upstream might
+  read it from, so a within-cap value in one cannot mask an over-cap value in
+  the other. The regression covering that kept its assertion but lost its
+  fixture: its "does not over-deny" control sent two disagreeing values and
+  asserted allow, which quietly made disagreement a guaranteed behaviour. The
+  control now uses agreeing values and disagreement is asserted as a denial.
+
 ## [0.1.1] - 2026-06-14
 
 ### Changed

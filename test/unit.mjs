@@ -340,8 +340,19 @@ section('deep-audit regressions: byte-aware scrub / SSRF / host canon / policy')
   const e2 = new PolicyEngine({ defaultAction: 'deny', egressAllowlist: ['api.x.com'], rules: [{ id: 'charge', match: { hosts: ['api.x.com'], paths: ['/charge'] }, action: 'allow', amountLimit: { field: 'amount', max: 1000 } }] });
   const overQuery = e2.evaluate({ host: 'api.x.com', method: 'POST', path: '/charge?amount=999999', body: Buffer.from('{"amount":1}'), contentType: 'application/json' });
   ok('policy: over-cap QUERY amount denied even with within-cap body', overQuery.action === 'deny', JSON.stringify(overQuery));
-  const bothOk = e2.evaluate({ host: 'api.x.com', method: 'POST', path: '/charge?amount=500', body: Buffer.from('{"amount":1}'), contentType: 'application/json' });
-  ok('policy: both-location amounts within cap -> allow', bothOk.action === 'allow', JSON.stringify(bothOk));
+  // The control for the assertion above: prove the engine does not over-deny a
+  // request that is fine. This used to send body=1 with query=500 — two
+  // DISAGREEING values — and assert allow, which quietly made "the two
+  // locations may say different things" a guaranteed behaviour. It is not one:
+  // this proxy shows the amount to a human for approval and writes it to the
+  // audit log, so a request where the body says 1 and the query says 500 has no
+  // single truthful answer to put in front of the operator, whichever value the
+  // cap would permit. That case is now asserted as a denial just below, and the
+  // control uses agreeing values, which is what a legitimate client sends.
+  const bothOk = e2.evaluate({ host: 'api.x.com', method: 'POST', path: '/charge?amount=500', body: Buffer.from('{"amount":500}'), contentType: 'application/json' });
+  ok('policy: both-location amounts agreeing and within cap -> allow', bothOk.action === 'allow', JSON.stringify(bothOk));
+  const disagree = e2.evaluate({ host: 'api.x.com', method: 'POST', path: '/charge?amount=500', body: Buffer.from('{"amount":1}'), contentType: 'application/json' });
+  ok('policy: body and query disagreeing is denied even when both are within cap', disagree.action === 'deny', JSON.stringify(disagree));
 }
 
 // ---------------------------------------------------------------------------
