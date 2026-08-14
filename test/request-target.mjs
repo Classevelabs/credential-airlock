@@ -19,8 +19,17 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const D = (rel) => require(path.join(here, '..', 'dist', rel));
 const { normalizeRequestTarget, InvalidRequestTarget } = D('util/request-target.js');
 
+// A label is printed only once the assertions that FOLLOW it have run without
+// throwing. Printing on call would show `PASS x` immediately above the failure
+// of x, which is the same "reports success it has not confirmed" pattern this
+// suite exists to catch elsewhere.
 let passed = 0;
-const check = (name) => { passed++; console.log(`  PASS  ${name}`); };
+let pending = null;
+function flush() {
+  if (pending !== null) { passed++; console.log(`  PASS  ${pending}`); pending = null; }
+}
+const check = (n) => { flush(); pending = n; };
+process.on('exit', flush);
 const norm = (t) => normalizeRequestTarget(t).target;
 
 // ── the bypasses ───────────────────────────────────────────────────────
@@ -143,4 +152,5 @@ check('a genuinely different resource is still allowed');
 assert.equal(engine.evaluate({ host: 'api.stripe.com', method: 'POST', path: norm('/v1/charges'), body: null }).action, 'allow');
 assert.equal(engine.evaluate({ host: 'api.stripe.com', method: 'GET', path: norm('/v1/refunds'), body: null }).action, 'allow');
 
+flush();
 console.log(`\nRequest-target normalisation: ${passed} assertions passed`);
