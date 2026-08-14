@@ -18,8 +18,17 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const D = (rel) => require(path.join(here, '..', 'dist', rel));
 const { PolicyEngine } = D('policy/policy.js');
 
+// A label is printed only once the assertions that FOLLOW it have run without
+// throwing. Printing on call would show `PASS x` immediately above the failure
+// of x, which is the same "reports success it has not confirmed" pattern this
+// suite exists to catch elsewhere.
 let passed = 0;
-const check = (n) => { passed++; console.log(`  PASS  ${n}`); };
+let pending = null;
+function flush() {
+  if (pending !== null) { passed++; console.log(`  PASS  ${pending}`); pending = null; }
+}
+const check = (n) => { flush(); pending = n; };
+process.on('exit', flush);
 
 const engineFor = (field) => new PolicyEngine({
   defaultAction: 'deny',
@@ -75,4 +84,5 @@ check('a mutating request with no readable amount anywhere fails closed');
 assert.equal(ev('/v1/charges', null).action, 'deny');
 assert.equal(ev('/v1/charges', body('currency=usd'), 'application/x-www-form-urlencoded').action, 'deny');
 
+flush();
 console.log(`\nAmount cap: ${passed} assertions passed`);
