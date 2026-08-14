@@ -49,9 +49,14 @@ if (pkg.name !== 'credential-airlock') errors.push('package name must be credent
 if (!pkg.version) errors.push('package version is required');
 if (pkg.license !== 'Apache-2.0') errors.push('license must stay Apache-2.0');
 if (pkg.author !== 'ClassEve') errors.push('author must be ClassEve');
-if (!pkg.repository?.url?.includes('github.com/classeve-public/credential-airlock')) errors.push('repository.url must point at classeve-public/credential-airlock');
-if (!pkg.homepage?.includes('github.com/classeve-public/credential-airlock')) errors.push('homepage must point at classeve-public/credential-airlock');
-if (!pkg.bugs?.url?.includes('github.com/classeve-public/credential-airlock/issues')) errors.push('bugs.url must point at classeve-public/credential-airlock/issues');
+// The repository moved to the Classevelabs organisation, which is where every
+// public ClassEve project now lives; classeve-public survives only as a GitHub
+// transfer redirect. This gate still demanded the old owner, so it enforced a
+// URL that is one redirect away from breaking and disagreed with the CI badge
+// at the top of the README, which already points at Classevelabs.
+if (!pkg.repository?.url?.includes('github.com/Classevelabs/credential-airlock')) errors.push('repository.url must point at Classevelabs/credential-airlock');
+if (!pkg.homepage?.includes('github.com/Classevelabs/credential-airlock')) errors.push('homepage must point at Classevelabs/credential-airlock');
+if (!pkg.bugs?.url?.includes('github.com/Classevelabs/credential-airlock/issues')) errors.push('bugs.url must point at Classevelabs/credential-airlock/issues');
 if (pkg.publishConfig?.access !== 'public') errors.push('publishConfig.access must be public');
 if (pkg.engines?.node !== '>=20.0.0') errors.push('engines.node must remain >=20.0.0');
 

@@ -5,8 +5,16 @@
 [![Security policy](https://img.shields.io/badge/security-policy-informational.svg)](SECURITY.md)
 
 **A self-hosted, OS-sealed credential firewall for AI agents.**
-Your agents never hold your real API keys. The real keys are sealed to this
-machine. Every outbound request is policy-checked and audited before it leaves.
+Your agents are handed placeholders instead of your real API keys. The real keys
+are sealed to this machine, and every outbound request is policy-checked and
+audited before it leaves.
+
+What that boundary is, stated plainly: it contains a *misled* agent — one that
+goes on using its normal HTTP path after being talked into something — not
+arbitrary hostile code already running as you. The proxy and the vault run under
+the same operating-system account as the agent, so code that deliberately reads
+the vault or opens a socket that ignores the proxy is outside what this stops.
+See [Claims we make / claims we do not make](#claims-we-make--claims-we-do-not-make).
 
 Built and maintained by **ClassEve**. Windows-first. Node/TypeScript. You run
 it; ClassEve never sees your credentials.
@@ -28,10 +36,13 @@ it; ClassEve never sees your credentials.
 
 Three parts on your own machine:
 
-1. **The agent** sees only **dummy placeholders** — `__OPENAI_KEY__`,
-   `__STRIPE_KEY__`, `dummy_cf_token`. It never holds, decrypts, or logs a real
-   key. There is nothing real in its memory or context to leak, and your secret
-   scanners have nothing to flag.
+1. **The agent** is given only **dummy placeholders** — `__OPENAI_KEY__`,
+   `__STRIPE_KEY__`, `dummy_cf_token`. Nothing real is put into its memory or
+   context, so there is nothing real for it to leak into a transcript, a log or
+   a paste, and your secret scanners have nothing to flag. This is what stops
+   the accident and the injected instruction. It is not a wall: the agent runs
+   as the same OS user as the vault, so a process that goes looking for the
+   vault instead of using its placeholder can still open it.
 
 2. **The proxy** is the **trust boundary** — a small loopback forward proxy.
    The agent points `HTTP(S)_PROXY` at it. It is **deny-by-default**: any host
@@ -527,7 +538,8 @@ guarantee, overdeliver the execution.
 
 **CAN say (truthful, defensible):**
 
-- "Your AI agents never hold your real API keys."
+- "Your AI agents are never given your real API keys." *(Given — not prevented
+  from obtaining. See the same-user limit below.)*
 - "Keys are sealed to your hardware; a stolen disk or repo is useless
   elsewhere." *(On this Windows build, read "hardware" as "your Windows account
   on this machine" — DPAPI, not a TPM. See [the sealer note](#the-sealer-honestly).)*
@@ -541,6 +553,18 @@ guarantee, overdeliver the execution.
 - "Your keys can never be used by an attacker." (A compromised live machine can
   still use them within policy.)
 - "Recoverable but impossible to steal." (Recovery = attack surface.)
+- "A hijacked agent cannot reach your keys." It can, if it stops cooperating.
+  The proxy and the vault run under the same OS account as the agent, and DPAPI
+  `CurrentUser` binds a secret to *that account*, not to a process. A separately
+  spawned child running as the same user can open a copy of the data directory
+  and recover the secret; this was reproduced deliberately, with a test-only
+  value, and it is why this limit is written here rather than left implied.
+  Egress is the same story: `airlock run` sets the proxy environment variables,
+  which is a convention a cooperating program follows, not a rule the operating
+  system enforces — code that opens its own socket is not routed through the
+  proxy at all. Both are boundaries against a misled agent. Neither is a
+  boundary against arbitrary code already running as you, and treating them as
+  one is the mistake this section exists to prevent.
 
 ---
 
