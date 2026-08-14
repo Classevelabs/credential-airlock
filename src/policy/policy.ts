@@ -72,6 +72,13 @@ export function extractAmountFromQuery(pathWithQuery: string, field: string): nu
   }
 }
 
+/** `/x/` -> `/x`; the root stays `/`. Matching only - never forwarded. */
+function stripTrailingSlash(p: string): string {
+  if (p.length <= 1) return p;
+  const trimmed = p.replace(/\/+$/, '');
+  return trimmed === '' ? '/' : trimmed;
+}
+
 export class PolicyEngine {
   private buckets = new Map<string, number[]>();
 
@@ -90,7 +97,24 @@ export class PolicyEngine {
 
   private ruleMatches(rule: PolicyRule, ctx: EvalCtx): boolean {
     const hostOk = !rule.match.hosts?.length || matchAnyHost(rule.match.hosts, ctx.host);
-    const pathOk = matchAnyPath(rule.match.paths, ctx.path.split('?')[0]);
+    const rawPath = ctx.path.split('?')[0];
+    // `/v1/refunds` and `/v1/refunds/` are the same endpoint to every API this
+    // proxies, but they are different strings, so a deny rule written for one
+    // was evaded by the other and fell through to the host-wide
+    // `allow-secret-<name>` rule the product auto-creates. Verified against the
+    // compiled build.
+    //
+    // This is fixed HERE and not in the request-target normaliser on purpose:
+    // the normaliser rewrites what is forwarded upstream, and a trailing slash
+    // genuinely can select a different resource there. Matching is the only
+    // layer that may treat them as one.
+    //
+    // Additive by construction - the un-stripped form is tried first, so a
+    // pattern like `/v1/refunds/*` that already matched still matches. Nothing
+    // that was allowed becomes denied; only the evasion is closed.
+    const pathOk =
+      matchAnyPath(rule.match.paths, rawPath) ||
+      matchAnyPath(rule.match.paths, stripTrailingSlash(rawPath));
     const methodOk =
       !rule.match.methods?.length ||
       rule.match.methods.map((m) => m.toUpperCase()).includes(ctx.method.toUpperCase());

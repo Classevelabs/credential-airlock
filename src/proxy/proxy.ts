@@ -25,6 +25,7 @@ import { applyInjection, Headers } from './inject';
 import { log, scrub, scrubBuffer, scrubLatin1, maxRedactionLength } from '../util/logger';
 import { HEADER_TOKEN_RE } from '../util/http-token';
 import { AirlockConfig } from '../types';
+import { normalizeRequestTarget, InvalidRequestTarget } from '../util/request-target';
 
 const MAX_BODY = 10 * 1024 * 1024;
 // Aggregate cap on bytes buffered across all in-flight requests (memory DoS guard).
@@ -423,13 +424,40 @@ export class AirlockProxy {
       res.writeHead(400).end('bad url');
       return;
     }
+    // Userinfo in an absolute-form target is never legitimate here and is a
+    // classic way to make one URL read as two different hosts depending on who
+    // is parsing it. Rejected outright rather than stripped.
+    if (parsed.username || parsed.password) {
+      res.writeHead(400, { 'content-type': 'application/json', connection: 'close' });
+      res.end(JSON.stringify({ error: 'bad_proxy_url' }));
+      return;
+    }
     // Honor the request-target scheme. An https:// absolute-form target must go
     // through the TLS-verified upstream path (rejectUnauthorized), NOT be silently
     // downgraded to a cleartext port-80 dial.
+    //
+    // Note this deliberately keeps https working. The change that introduced the
+    // normalisation below rejected every non-http: target, which would have shut
+    // the TLS-verified path off entirely — trading one hole for another. Both
+    // properties are wanted, so both are kept.
     const scheme: 'http' | 'https' = parsed.protocol === 'https:' ? 'https' : 'http';
     const host = canonicalHost(parsed.hostname);
     const port = parseInt(parsed.port || (scheme === 'https' ? '443' : '80'), 10);
-    const reqPath = parsed.pathname + parsed.search;
+    // Same normalisation as the MITM path. WHATWG URL already resolves dot
+    // segments, but it preserves duplicate slashes and percent-encoded
+    // unreserved characters, so three of the five bypass spellings survive it.
+    // The normalised value is what BOTH the policy check and the forwarded
+    // request see, which is the whole point: a client must not be able to
+    // describe one resource to the proxy and another to the origin.
+    let reqPath: string;
+    try {
+      reqPath = normalizeRequestTarget(parsed.pathname + parsed.search).target;
+    } catch (e) {
+      const reason = e instanceof InvalidRequestTarget ? e.message : 'malformed request target';
+      res.writeHead(400, { 'content-type': 'application/json', connection: 'close' });
+      res.end(JSON.stringify({ error: 'bad_request_target', reason }));
+      return;
+    }
     // Deny-by-default FIRST, before any DNS — symmetric with the CONNECT path
     // (handleConnect checks isHostAllowed before resolving). Otherwise egressBlockReason
     // would dns.lookup() an attacker-chosen non-allowlisted host, leaking a blind-DNS
@@ -468,7 +496,25 @@ export class AirlockProxy {
         return;
       }
       target = t;
-      path = req.url || '/';
+      // Normalise before anything reads it. Taking req.url verbatim here let a
+      // client describe one resource to the proxy and another to the origin:
+      // absolute-form, dot-segments, duplicate slashes and percent-encoded
+      // unreserved characters each evaded a path-scoped rule and fell through
+      // to the auto-generated host-wide allow, with the credential injected.
+      // The normalised value is used for policy AND forwarding so the two
+      // views cannot diverge again.
+      try {
+        path = normalizeRequestTarget(req.url).target;
+      } catch (e) {
+        const reason = e instanceof InvalidRequestTarget ? e.message : 'malformed request target';
+        res.writeHead(400, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ error: 'bad_request_target', reason }));
+        this.deps.audit.append({
+          event: 'request', host: t.host, method: req.method || 'GET',
+          path: '(rejected)', decision: 'denied', reason,
+        });
+        return;
+      }
     }
     const method = req.method || 'GET';
     const host = target.host;
