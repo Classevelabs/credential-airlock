@@ -71,27 +71,20 @@ export function exists(file: string): boolean {
 export function appendLine(file: string, line: string): void {
   ensureDir(path.dirname(file));
   // Self-correct a missing trailing newline (e.g. a crash dropped it) so two
-  // entries can never be glued onto one physical line and fork the chain. Read
-  // the last byte via a READ fd — an append-mode fd is not readable on Windows.
-  let needSep = false;
+  // entries can never be glued onto one physical line and fork the chain.
+  // One handle for the whole operation: the previous version stat'd the name,
+  // opened it again to read the last byte, and opened it a third time to
+  // append, so the separator decision described a file that could already have
+  // been replaced by the time the write landed. 'a+' is readable — the note
+  // about append-mode fds not being readable on Windows applies to 'a'.
+  const fd = fs.openSync(file, 'a+', 0o600);
   try {
-    const st = fs.statSync(file);
+    const st = fs.fstatSync(fd);
     if (st.size > 0) {
-      const rfd = fs.openSync(file, 'r');
-      try {
-        const tail = Buffer.alloc(1);
-        fs.readSync(rfd, tail, 0, 1, st.size - 1);
-        needSep = tail[0] !== 0x0a;
-      } finally {
-        fs.closeSync(rfd);
-      }
+      const tail = Buffer.alloc(1);
+      fs.readSync(fd, tail, 0, 1, st.size - 1);
+      if (tail[0] !== 0x0a) fs.writeSync(fd, '\n');
     }
-  } catch (e) {
-    if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e;
-  }
-  const fd = fs.openSync(file, 'a', 0o600);
-  try {
-    if (needSep) fs.writeSync(fd, '\n');
     fs.writeSync(fd, line + '\n');
     fs.fsyncSync(fd);
   } finally {
