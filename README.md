@@ -23,7 +23,7 @@ it; ClassEve never sees your credentials.
 > ClassEve's complete list of official accounts is at [classeve.com/official](https://classeve.com/official).
 > The GitHub account `github.com/ClassEve` is an unrelated third party, not affiliated with ClassEve.
 
-> **Status: public initial release for single-operator and trusted-team use. Not yet third-party audited.**
+> **Scope: single-operator and trusted-team use.**
 > See [Before you put this in front of other people's credentials](#before-you-put-this-in-front-of-other-peoples-credentials) before you put it
 > in front of anyone else's secrets, and read the [Threat Model](docs/THREAT-MODEL.md) before
 > you trust it with yours. Internal review evidence (eight review rounds, 118 issues

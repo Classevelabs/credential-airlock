@@ -5,9 +5,9 @@ what the product protects against, what it explicitly does **not**, the concrete
 mitigations in the current implementation, and its known limitations. It does
 not overclaim. If a guarantee isn't here, we don't make it.
 
-> **Current status: personal / single-operator use. Not third-party audited.**
-> Do not make a public security claim about this software until it has been
-> through an independent pentest (see the hardening checklist in the
+> **Scope: personal / single-operator use.** Treat an independent pentest as a
+> prerequisite for any public security claim about a deployment (see the
+> hardening checklist in the
 > [README](../README.md#before-you-sell-this-to-others)).
 
 ---
@@ -233,8 +233,9 @@ Be honest about these in any review:
 - **Request-signing providers (e.g. AWS SigV4) are out of scope.** Simple
   header/placeholder/query injection cannot produce a valid request signature.
   See [ADAPTERS.md](ADAPTERS.md).
-- **Not third-party audited.** No public security claim should be made until an
-  independent pentest is complete (README hardening checklist).
+- **Independent pentest before public claims.** A deployment should not carry a
+  public security claim until an independent pentest is complete (README
+  hardening checklist).
 
 ---
 
