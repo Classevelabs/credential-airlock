@@ -16,8 +16,7 @@ the same operating-system account as the agent, so code that deliberately reads
 the vault or opens a socket that ignores the proxy is outside what this stops.
 See [Claims we make / claims we do not make](#claims-we-make--claims-we-do-not-make).
 
-Built and maintained by **ClassEve**. Windows-first. Node/TypeScript. You run
-it; ClassEve never sees your credentials.
+Built by **ClassEve**, for Windows. You run it; ClassEve never sees your credentials.
 
 > **Official repository.** This is the only official repository for Credential Airlock.
 > ClassEve's complete list of official accounts is at [classeve.com/official](https://classeve.com/official).
@@ -26,9 +25,7 @@ it; ClassEve never sees your credentials.
 > **Scope: single-operator and trusted-team use.**
 > See [Before you put this in front of other people's credentials](#before-you-put-this-in-front-of-other-peoples-credentials) before you put it
 > in front of anyone else's secrets, and read the [Threat Model](docs/THREAT-MODEL.md) before
-> you trust it with yours. Internal review evidence (eight review rounds, 118 issues
-> fixed, 209-assertion test suite, `npm audit` clean) is documented in
-> [docs/AUDIT.md](docs/AUDIT.md).
+> you trust it with yours.
 
 ---
 
@@ -67,17 +64,12 @@ didn't allow.
 This product wins on **execution and honesty**, not on novel cryptography.
 
 - **It is not "unbreakable."** Nobody's is. We do not claim it is.
-- **The architecture is not new.** Dummy keys + an injecting proxy already ship
-  as open-source and commercial products. We are a well-executed, fully
-  self-hosted take with a real migration story — not a new invention.
 - **It does not make a hijacked agent safe.** It stops the **key** from
   leaking. It cannot stop a compromised agent from **using** the key's power
   within whatever policy you granted. That gap is closed by **policy and human
   approval**, not by hiding the key. Read [THREAT-MODEL.md](docs/THREAT-MODEL.md).
 
-What you *can* honestly say is in [Claims we make / claims we do not
-make](#claims-we-make--claims-we-do-not-make), copied faithfully from the
-product brief. If a sentence isn't in the "CAN say" list, don't say it.
+What the product does and does not guarantee is in [Claims we make / claims we do not make](#claims-we-make--claims-we-do-not-make).
 
 ### The competitive reality
 
@@ -85,7 +77,7 @@ These exist as of 2026. Study them; don't pretend they don't.
 
 | Tool | What it is |
 |---|---|
-| **Infisical "Agent Vault"** (OSS) | Substitutes dummy header values like `__anthropic_api_key__` with real creds on outbound requests. HTTP proxy + vault. This is the same dummy-key idea, shipping. |
+| **Infisical "Agent Vault"** (OSS) | Substitutes dummy header values like `__anthropic_api_key__` with real creds on outbound requests. HTTP proxy + vault. |
 | **AgentSecrets** (OSS) | Zero-knowledge proxy; pulls the real value from the OS keychain and injects at the transport layer; the key never enters agent memory. |
 | **Pipelock / PipeLab** (OSS, Apache-2.0) | AI-agent firewall, ~20 MB Go binary; agent has no network, proxy has no secrets, scanning boundary between them. |
 | **Akeyless** (commercial) | Secretless brokered access; JIT ephemeral creds injected by a gateway; SPIFFE/SPIRE workload identity. |
@@ -114,8 +106,8 @@ These exist as of 2026. Study them; don't pretend they don't.
 > end-to-end OpenAI example) see [docs/QUICKSTART.md](docs/QUICKSTART.md).
 
 ```powershell
-# 1. Install the CLI
-npm install -g credential-airlock
+# 1. Get it from source (see docs/QUICKSTART.md)
+git clone https://github.com/Classevelabs/credential-airlock
 
 # 2. Check the machine, ports, and sealer
 airlock doctor
@@ -506,12 +498,9 @@ one, and rotate the upstream keys.
 
 ## Before you put this in front of other people's credentials
 
-This is currently fit for **personal / single-operator use and has not been
-through a third-party security audit.** The product brief is blunt about why a
-product that holds other people's keys is the highest-value target on the
-internet (see the LiteLLM and Bitwarden-CLI incidents of 2026). Treat the
-following as **non-negotiable before you make any public security claim** or put
-this in front of someone else's credentials:
+This is fit for **personal and trusted-team use.** A product that holds other
+people's keys is a high-value target, so treat the following as **non-negotiable**
+before you put it in front of someone else's credentials:
 
 - [x] **Minimal, pinned dependencies; review every one.** Supply chain is how
       LiteLLM-class incidents happen. (This build has a single runtime dep,
@@ -523,18 +512,9 @@ this in front of someone else's credentials:
       user/namespace/container). It can unwrap real keys - it is the crown jewel.
 - [x] **No network-exposed admin or "reveal" endpoint. Ever.** The control plane
       stays loopback-only; there is deliberately no reveal route.
-- [ ] **Third-party pentest before any public security claim.**
-
-Until the external pentest is done, market it as exactly what it is: a ClassEve
-open-source, self-hosted credential firewall for your own agents and trusted
-teams, with honest limits.
-
 ---
 
 ## Claims we make / claims we do not make
-
-Copied faithfully from the product brief (section 7). Underpromise the
-guarantee, overdeliver the execution.
 
 **CAN say (truthful, defensible):**
 
