@@ -20,7 +20,7 @@ machines, use the migration ceremony (`airlock migrate`), not a file copy.
 ## Mode 1 — Windows host (recommended for personal use)
 
 ```powershell
-npm install -g credential-airlock
+npm install -g github:Classevelabs/credential-airlock
 airlock init
 airlock secret set openai --value <KEY> --host api.openai.com
 
@@ -35,7 +35,7 @@ CA automatically), or point a shell at it with `airlock env`.
 ## Mode 2 — macOS host
 
 ```bash
-npm install -g credential-airlock
+npm install -g github:Classevelabs/credential-airlock
 airlock init        # uses the Keychain sealer
 airlock secret set openai --value <KEY> --host api.openai.com
 airlock start
@@ -51,7 +51,7 @@ header of [`deploy/airlock.service`](../deploy/airlock.service):
 
 ```bash
 sudo useradd --system --home-dir /var/lib/credential-airlock --shell /usr/sbin/nologin airlock
-npm install -g credential-airlock
+npm install -g github:Classevelabs/credential-airlock
 NPM_ROOT="$(npm root -g)"
 sudo mkdir -p /opt/credential-airlock
 sudo cp -a "$NPM_ROOT/credential-airlock/." /opt/credential-airlock/
@@ -125,7 +125,7 @@ Each agent must trust the CA at `$AIRLOCK_HOME/airlock-ca.crt` (mounted at
 Host installs:
 
 ```bash
-npm install -g credential-airlock@latest
+npm install -g github:Classevelabs/credential-airlock@latest
 sudo systemctl restart airlock  # Linux service installs
 ```
 

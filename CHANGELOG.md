@@ -261,6 +261,6 @@ findings. All fixes covered by 24 new test assertions (now 209 total, all green)
   key-leak (now fails closed) and node-forge CVEs (upgraded to 1.4.0,
   `npm audit` clean). Full evidence in [docs/AUDIT.md](docs/AUDIT.md).
 
-[Unreleased]: https://github.com/classeve-public/credential-airlock/compare/v0.1.1...HEAD
-[0.1.1]: https://github.com/classeve-public/credential-airlock/compare/v0.1.0...v0.1.1
-[0.1.0]: https://github.com/classeve-public/credential-airlock/releases/tag/v0.1.0
+[Unreleased]: https://github.com/Classevelabs/credential-airlock/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/Classevelabs/credential-airlock/compare/v0.1.0...v0.1.1
+[0.1.0]: https://github.com/Classevelabs/credential-airlock/releases/tag/v0.1.0
