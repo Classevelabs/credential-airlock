@@ -16,7 +16,7 @@ entrypoint after `npm install && npm run build`.
 ## 1. Install
 
 ```powershell
-npm install -g credential-airlock
+npm install -g github:Classevelabs/credential-airlock
 ```
 
 Sanity-check your environment:

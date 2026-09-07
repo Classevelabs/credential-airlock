@@ -1,7 +1,7 @@
 # Release Runbook
 
 This runbook is for maintainers cutting a public Credential Airlock release from
-`classeve-public/credential-airlock`.
+`Classevelabs/credential-airlock`.
 
 ## Release Requirements
 
@@ -71,7 +71,7 @@ Verify:
 
 ```bash
 npm view credential-airlock version
-npm install -g credential-airlock@latest
+npm install -g github:Classevelabs/credential-airlock
 airlock doctor
 ```
 

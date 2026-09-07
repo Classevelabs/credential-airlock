@@ -35,7 +35,7 @@ Until 1.0, only the latest released minor receives security fixes.
 **Please do not open a public issue for security problems.**
 
 Preferred: open a private report via GitHub Security Advisories:
-<https://github.com/classeve-public/credential-airlock/security/advisories/new>
+<https://github.com/Classevelabs/credential-airlock/security/advisories/new>
 
 If you cannot use GitHub advisories, email the maintainer privately at
 **security@classeve.com**. This inbox is monitored for security reports; for

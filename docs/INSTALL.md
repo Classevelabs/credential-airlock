@@ -26,7 +26,7 @@ Use this for offline machines or pinned internal rollout:
 
 ```powershell
 $version = "0.1.1"
-$url = "https://github.com/classeve-public/credential-airlock/releases/download/v$version/credential-airlock-$version.tgz"
+$url = "https://github.com/Classevelabs/credential-airlock/releases/download/v$version/credential-airlock-$version.tgz"
 Invoke-WebRequest $url -OutFile ".\credential-airlock-$version.tgz"
 npm install -g ".\credential-airlock-$version.tgz"
 airlock doctor

@@ -7,7 +7,7 @@ clear, reproducible GitHub issue.
 
 Use GitHub Issues:
 
-<https://github.com/classeve-public/credential-airlock/issues>
+<https://github.com/Classevelabs/credential-airlock/issues>
 
 Please include:
 
@@ -25,7 +25,7 @@ tokens, backups, or audit logs that may reveal your environment.
 Do not open a public issue for vulnerabilities. Follow [SECURITY.md](SECURITY.md)
 and use GitHub Security Advisories:
 
-<https://github.com/classeve-public/credential-airlock/security/advisories/new>
+<https://github.com/Classevelabs/credential-airlock/security/advisories/new>
 
 ## Commercial Or Enterprise Use
 
