@@ -125,7 +125,7 @@ Each agent must trust the CA at `$AIRLOCK_HOME/airlock-ca.crt` (mounted at
 Host installs:
 
 ```bash
-npm install -g github:Classevelabs/credential-airlock@latest
+npm install -g github:Classevelabs/credential-airlock
 sudo systemctl restart airlock  # Linux service installs
 ```
 
