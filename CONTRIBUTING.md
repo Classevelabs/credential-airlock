@@ -37,8 +37,8 @@ assertion green, and add a test for new behavior.
 - **Amount caps and approvals fail closed.**
 - A single-writer lock guards all mutations.
 
-See `CLAUDE.md` and [docs/THREAT-MODEL.md](docs/THREAT-MODEL.md) for the full
-architecture and boundary.
+See [docs/THREAT-MODEL.md](docs/THREAT-MODEL.md) for the full architecture and
+boundary.
 
 ## Pull requests
 

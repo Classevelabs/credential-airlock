@@ -10,39 +10,13 @@ Requirements:
 - A local user account you trust. The vault is sealed for the local operator,
   not for a remote SaaS service.
 
-## Install From npm
-
-```powershell
-node --version
-npm install -g credential-airlock
-airlock doctor
-```
-
-If PowerShell blocks `npm.ps1` because script execution is disabled, call npm
-through the Windows command shim:
-
-```powershell
-npm.cmd install -g credential-airlock
-```
-
-The installed command is still `airlock`.
-
-## Run Without Global Install
-
-For CI checks, demos, or one-off machines:
-
-```powershell
-npx credential-airlock@latest doctor
-npm exec --package credential-airlock@latest -- airlock doctor
-```
-
 ## Install From GitHub
 
 This path builds from source through the package `prepare` script. It requires
 the repository to be public, or your npm/git process to have GitHub credentials.
 
 ```powershell
-npm install -g github:classeve-public/credential-airlock
+npm install -g github:Classevelabs/credential-airlock
 airlock doctor
 ```
 
@@ -77,29 +51,6 @@ airlock start
 Open your agent through `airlock run -- <command>` or from the local control
 panel. The agent sees placeholders; Credential Airlock injects the real key only
 toward the hosts bound to that secret.
-
-## Upgrade Or Reinstall
-
-```powershell
-npm update -g credential-airlock
-# or force the newest published version
-npm install -g credential-airlock@latest
-```
-
-Uninstalling the npm package does not delete your vault, audit log, local CA, or
-policy:
-
-```powershell
-npm uninstall -g credential-airlock
-```
-
-Before moving machines, use the migration ceremony instead of copying the sealed
-vault:
-
-```powershell
-airlock backup --out .\airlock-backup.tar.gz
-airlock migrate setup
-```
 
 ## Verify An Install
 
