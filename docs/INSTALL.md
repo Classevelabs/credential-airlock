@@ -25,10 +25,18 @@ airlock doctor
 Use this for offline machines or pinned internal rollout:
 
 ```powershell
-$version = "0.1.1"
-$url = "https://github.com/Classevelabs/credential-airlock/releases/download/v$version/credential-airlock-$version.tgz"
-Invoke-WebRequest $url -OutFile ".\credential-airlock-$version.tgz"
-npm install -g ".\credential-airlock-$version.tgz"
+# The release you are pinning to. Bump deliberately; a release gate
+# (scripts/validate-package.mjs) fails if this drifts from the shipped version.
+$version = "0.1.4"
+$base = "https://github.com/Classevelabs/credential-airlock/releases/download/v$version"
+$tgz  = "credential-airlock-$version.tgz"
+Invoke-WebRequest "$base/$tgz"           -OutFile ".\$tgz"
+Invoke-WebRequest "$base/SHA256SUMS.txt" -OutFile ".\SHA256SUMS.txt"
+# Integrity (mandatory, zero-dependency): the tarball must match the published checksum.
+$want = ((Select-String -Path .\SHA256SUMS.txt -SimpleMatch $tgz).Line -split '\s+')[0]
+$got  = (Get-FileHash ".\$tgz" -Algorithm SHA256).Hash.ToLower()
+if ($want -ne $got) { throw "checksum mismatch for $tgz -- do NOT install" }
+npm install -g ".\$tgz"
 airlock doctor
 ```
 

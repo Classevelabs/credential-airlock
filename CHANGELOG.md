@@ -28,6 +28,17 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - **The approval card shows the real scheme.** A request awaiting a human was
   labelled `https://…` even when it was cleartext; it now shows the transport
   the request will actually use.
+- **Pre-publish audit hardening.** Closes the residual path-equivalence
+  spellings the fold missed (`%0A`/`%0D`/`%0C`/`%0B` and the rest of the C0
+  range, which a trailing-whitespace-trimming origin resolves to the canonical
+  resource); refuses a duplicate or non-numeric **query** amount instead of
+  reading it as absent, symmetric to the body path; no longer lets a database or
+  broker **DSN under any variable name** reach a launched agent's environment;
+  makes vault re-key and audit-log rotation **crash-atomic** (a crash
+  mid-operation can no longer strand the vault undecryptable or stamp a
+  permanent false tamper flag); bounds the admin event stream against a stalled
+  consumer; and hardens the release workflow (no template injection, no unpinned
+  run-time code, tag/version coherence enforced).
 
 ## [0.1.3] - 2026-08-14
 
@@ -286,5 +297,7 @@ findings. All fixes covered by 24 new test assertions (now 209 total, all green)
 
 [Unreleased]: https://github.com/Classevelabs/credential-airlock/compare/v0.1.4...HEAD
 [0.1.4]: https://github.com/Classevelabs/credential-airlock/compare/v0.1.3...v0.1.4
+[0.1.3]: https://github.com/Classevelabs/credential-airlock/compare/v0.1.2...v0.1.3
+[0.1.2]: https://github.com/Classevelabs/credential-airlock/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Classevelabs/credential-airlock/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Classevelabs/credential-airlock/releases/tag/v0.1.0

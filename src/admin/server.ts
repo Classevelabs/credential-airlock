@@ -379,7 +379,19 @@ export class AdminServer {
   }
 
   // --- SSE ----------------------------------------------------------------
+  private dropSse(c: http.ServerResponse): void {
+    this.sseClients.delete(c);
+    try { c.destroy(); } catch { /* already gone */ }
+  }
+
   private handleSse(req: http.IncomingMessage, res: http.ServerResponse): void {
+    // Cap concurrent event streams so the admin plane cannot be pinned open by a
+    // flood of connections (paired with the per-client drain check in broadcast).
+    if (this.sseClients.size >= 64) {
+      res.writeHead(503, { 'content-type': 'text/plain' });
+      res.end('too many admin event streams');
+      return;
+    }
     res.writeHead(200, {
       'content-type': 'text/event-stream',
       'cache-control': 'no-store',
@@ -404,10 +416,18 @@ export class AdminServer {
   private broadcast(type: string, data: unknown): void {
     const payload = `event: ${type}\ndata: ${JSON.stringify(data)}\n\n`;
     for (const c of this.sseClients) {
+      // The write() boolean is the ONLY backpressure signal; ignoring it lets a
+      // stalled consumer make Node buffer un-flushable bytes in the heap without
+      // bound. Evict a client past ~8 MB buffered rather than feed it more.
+      const buffered = c.writableLength + (c.socket ? c.socket.writableLength : 0);
+      if (buffered > 8 * 1024 * 1024) {
+        this.dropSse(c);
+        continue;
+      }
       try {
         c.write(payload);
       } catch {
-        /* ignore */
+        this.dropSse(c);
       }
     }
   }

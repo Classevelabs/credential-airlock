@@ -133,6 +133,35 @@ export function extractAmountFromQuery(pathWithQuery: string, field: string): nu
   }
 }
 
+/**
+ * Read the amount from the URL query, mirroring readAmount's absent/refused/value
+ * union so the query path fails CLOSED on an ambiguous duplicate exactly like the
+ * body path. extractAmountFromQuery above conflated "absent" with "duplicate",
+ * which let `?amount=1&amount=999999` slip the value the upstream honours
+ * (last-wins) past the cap. Enforcement uses THIS; extractAmountFromQuery stays
+ * only for display of an unambiguous single value.
+ */
+export function readAmountFromQuery(pathWithQuery: string, field: string): AmountRead {
+  const q = pathWithQuery.indexOf('?');
+  if (q < 0) return { kind: 'absent' };
+  try {
+    const params = new URLSearchParams(pathWithQuery.slice(q + 1));
+    const keys = field.includes('.')
+      ? [field, field.split('.').reduce((a, b, i) => (i === 0 ? b : `${a}[${b}]`))]
+      : [field];
+    const all = keys.flatMap((k) => params.getAll(k));
+    if (all.length > 1) return { kind: 'refused', why: `field '${field}' appears ${all.length} times in the query; which one the upstream reads is ambiguous` };
+    if (all.length === 1) {
+      const n = Number(all[0]);
+      if (Number.isFinite(n)) return { kind: 'value', value: n };
+      return { kind: 'refused', why: `field '${field}' in the query is present but not a finite number` };
+    }
+    return { kind: 'absent' };
+  } catch {
+    return { kind: 'absent' };
+  }
+}
+
 /** `/x/` -> `/x`; the root stays `/`. Matching only - never forwarded. */
 function stripTrailingSlash(p: string): string {
   if (p.length <= 1) return p;
@@ -160,7 +189,13 @@ function stripTrailingSlash(p: string): string {
  * Case is handled in matchPath, dot-segments in the normaliser.
  */
 function originResourceForMatch(p: string): string {
-  let s = p.replace(/%(00|09|20|2e)/gi, (_m, h: string) => String.fromCharCode(parseInt(h, 16)));
+  // Decode every escape whose byte the trailing-strip on the line below would
+  // remove ([./\s\x00-\x1f]): all C0 controls (%00-%1F), space (%20), dot (%2e).
+  // The two sets must mirror each other or an encoded control the strip would
+  // otherwise remove — %0A/%0D/%0C/%0B and the rest of C0 — survives un-decoded
+  // and evades the rule. %2F is intentionally excluded: the encoded-separator
+  // equivalence is handled by originResourceDecodedSeparators.
+  let s = p.replace(/%([01][0-9a-f]|20|2e)/gi, (_m, h: string) => String.fromCharCode(parseInt(h, 16)));
   s = s.split('/').map((seg) => seg.split(';')[0]).join('/');
   s = s.replace(/[./\s\x00-\x1f]+$/, '');
   return s === '' ? '/' : s;
@@ -277,7 +312,15 @@ export class PolicyEngine {
           };
         }
         const amtBody = fromBody.kind === 'value' ? fromBody.value : undefined;
-        const amtQuery = extractAmountFromQuery(ctx.path, field);
+        const fromQuery = readAmountFromQuery(ctx.path, field);
+        if (fromQuery.kind === 'refused') {
+          return {
+            action: 'deny',
+            ruleId: rule.id,
+            reason: `amount cap on '${field}' could not be read from the request: ${fromQuery.why} (deny-by-default)`,
+          };
+        }
+        const amtQuery = fromQuery.kind === 'value' ? fromQuery.value : undefined;
         if (amtBody !== undefined && amtQuery !== undefined && amtQuery !== amtBody) {
           // Both readable and disagreeing: which one the upstream honours is
           // exactly the ambiguity this cap exists to remove.
