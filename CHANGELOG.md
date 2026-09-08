@@ -6,6 +6,29 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-09-08
+
+### Security
+- **A path-scoped rule can no longer be evaded by a spelling the origin treats
+  as the same resource.** 0.1.2 folded the wire-path transforms; this closes the
+  origin path-equivalences that are not wire transforms and so must not be
+  forwarded, but which a rule has to see through: letter **case**
+  (`/V1/REFUNDS`), **matrix parameters** (`/v1/refunds;x=1`), a **trailing dot**
+  or encoded trailing whitespace (`/v1/refunds.`, `/v1/refunds%20`), and
+  **encoded separators** a decoding origin resolves back (`/v1%2Frefunds`). Each
+  had carried a real credential past a deny / amount-cap / approval rule into the
+  auto-generated host-wide allow. Folding is applied to the matched value only —
+  the forwarded request keeps its exact bytes — so it can over-match (fail-safe)
+  but never rewrites a request. Path matching is now case-insensitive, matching
+  the host matcher.
+- **The request target refuses constructs with no origin-form meaning.** A
+  backslash, a `#` fragment, an encoded null (`%00`, the truncation
+  differential), and every C0 control byte and DEL are rejected outright rather
+  than normalised, the same stance already taken for absolute-form.
+- **The approval card shows the real scheme.** A request awaiting a human was
+  labelled `https://…` even when it was cleartext; it now shows the transport
+  the request will actually use.
+
 ## [0.1.3] - 2026-08-14
 
 ### Security
@@ -261,6 +284,7 @@ findings. All fixes covered by 24 new test assertions (now 209 total, all green)
   key-leak (now fails closed) and node-forge CVEs (upgraded to 1.4.0,
   `npm audit` clean). Full evidence in [docs/AUDIT.md](docs/AUDIT.md).
 
-[Unreleased]: https://github.com/Classevelabs/credential-airlock/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/Classevelabs/credential-airlock/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/Classevelabs/credential-airlock/compare/v0.1.3...v0.1.4
 [0.1.1]: https://github.com/Classevelabs/credential-airlock/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Classevelabs/credential-airlock/releases/tag/v0.1.0

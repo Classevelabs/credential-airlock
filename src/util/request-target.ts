@@ -126,8 +126,26 @@ export function normalizeRequestTarget(raw: string | undefined): NormalizedTarge
   // Asterisk-form: only ever valid for OPTIONS, and carries no path to match.
   if (value === '*') return { target: '*', pathname: '*', query: '' };
 
-  if (value.includes('\0') || /[\r\n]/.test(value)) {
+  // Reject every C0 control byte and DEL, not just CR/LF/NUL: any of them is
+  // either a smuggling attempt or a byte the origin strips, and strip-vs-keep is
+  // exactly the proxy/origin disagreement this module removes.
+  if (/[\x00-\x1f\x7f]/.test(value)) {
     throw new InvalidRequestTarget('request target contains control characters');
+  }
+  // An encoded null is the classic truncation differential (a C-string origin
+  // may cut `/a%00/b` at the null and serve `/a`). No legitimate path carries it.
+  if (/%00/i.test(value)) {
+    throw new InvalidRequestTarget('request target contains an encoded null byte');
+  }
+  // A backslash is never a URL path separator; a server that folds `\` to `/`
+  // would route to a resource the matcher never saw. Refuse, like absolute-form.
+  if (value.includes('\\')) {
+    throw new InvalidRequestTarget('request target contains a backslash; origin-form paths use "/"');
+  }
+  // A fragment cannot appear in an origin-form request-target; the origin may
+  // drop `#…` (serving a resource the matcher was not shown) or keep it.
+  if (value.includes('#')) {
+    throw new InvalidRequestTarget('request target contains a fragment; origin-form required');
   }
   if (!value.startsWith('/')) {
     throw new InvalidRequestTarget(

@@ -564,7 +564,10 @@ export class AirlockProxy {
         host,
         method,
         path,
-        summary: `${method} https://${host}${path}`,
+        // Show the real scheme the human is approving; a cleartext request is
+        // not https, and hardcoding it misrepresented the destination on the one
+        // screen a person uses to decide.
+        summary: `${method} ${scheme}://${host}${path}`,
         amount: amountField,
         ruleId: decision.ruleId,
       });

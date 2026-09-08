@@ -140,6 +140,53 @@ function stripTrailingSlash(p: string): string {
   return trimmed === '' ? '/' : trimmed;
 }
 
+/**
+ * The resource an origin will actually resolve this path to, for MATCHING only.
+ *
+ * The request-target normaliser closed the wire-path transforms (dot-segments,
+ * duplicate slashes, unreserved percent-decoding) and is used for forwarding, so
+ * it may not alter what is sent. These are the remaining origin path-equivalences
+ * that are NOT wire transforms and must never be forwarded, but which a rule for
+ * the canonical resource has to see through or it is evaded by a spelling the
+ * origin treats as the same endpoint. Each carried a real credential past a
+ * path-scoped deny/amount/approval rule against the compiled build:
+ *
+ *   /v1/refunds;x=1     matrix parameters (Spring/JAX-RS strip them)
+ *   /v1/refunds.        a trailing dot (Windows/IIS trim it)
+ *   /v1/refunds%20      a trailing encoded space/tab/null
+ *
+ * Applied only to the value the matcher compares; the forwarded target keeps its
+ * exact bytes, so this can over-match (fail-safe) but never rewrites a request.
+ * Case is handled in matchPath, dot-segments in the normaliser.
+ */
+function originResourceForMatch(p: string): string {
+  let s = p.replace(/%(00|09|20|2e)/gi, (_m, h: string) => String.fromCharCode(parseInt(h, 16)));
+  s = s.split('/').map((seg) => seg.split(';')[0]).join('/');
+  s = s.replace(/[./\s\x00-\x1f]+$/, '');
+  return s === '' ? '/' : s;
+}
+
+/** Interior dot-segment removal + duplicate-slash collapse, for the decoded form below. */
+function resolveSegments(p: string): string {
+  const out: string[] = [];
+  for (const seg of p.split('/')) {
+    if (seg === '' || seg === '.') continue;
+    if (seg === '..') { out.pop(); continue; }
+    out.push(seg);
+  }
+  return '/' + out.join('/');
+}
+
+/**
+ * The resource an origin that DECODES `%2F`/`%5C` in the path (Apache
+ * `AllowEncodedSlashes`, some frameworks) resolves this to. MATCHING only,
+ * fail-safe: adds a match the origin would honour; forwarded bytes stay encoded.
+ */
+function originResourceDecodedSeparators(p: string): string {
+  if (!/%(2f|5c)/i.test(p)) return p;
+  return originResourceForMatch(resolveSegments(p.replace(/%(2f|5c)/gi, '/')));
+}
+
 export class PolicyEngine {
   private buckets = new Map<string, number[]>();
 
@@ -175,7 +222,9 @@ export class PolicyEngine {
     // that was allowed becomes denied; only the evasion is closed.
     const pathOk =
       matchAnyPath(rule.match.paths, rawPath) ||
-      matchAnyPath(rule.match.paths, stripTrailingSlash(rawPath));
+      matchAnyPath(rule.match.paths, stripTrailingSlash(rawPath)) ||
+      matchAnyPath(rule.match.paths, originResourceForMatch(rawPath)) ||
+      matchAnyPath(rule.match.paths, originResourceDecodedSeparators(rawPath));
     const methodOk =
       !rule.match.methods?.length ||
       rule.match.methods.map((m) => m.toUpperCase()).includes(ctx.method.toUpperCase());
