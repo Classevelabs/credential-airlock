@@ -1,6 +1,6 @@
 {
   "name": "credential-airlock",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "A self-hosted credential firewall for AI agents: placeholders instead of real keys, deny-by-default egress, and an audit log. Secrets are sealed at rest by the OS (DPAPI/Keychain/passphrase, not a TPM). Contains a misled agent, not code running as the same OS user.",
   "license": "Apache-2.0",
   "author": "ClassEve",

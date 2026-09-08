@@ -27,7 +27,7 @@ Use this for offline machines or pinned internal rollout:
 ```powershell
 # The release you are pinning to. Bump deliberately; a release gate
 # (scripts/validate-package.mjs) fails if this drifts from the shipped version.
-$version = "0.1.5"
+$version = "0.1.6"
 $base = "https://github.com/Classevelabs/credential-airlock/releases/download/v$version"
 $tgz  = "credential-airlock-$version.tgz"
 Invoke-WebRequest "$base/$tgz"           -OutFile ".\$tgz"
