@@ -63,6 +63,14 @@ if (pkg.engines?.node !== '>=20.0.0') errors.push('engines.node must remain >=20
 if (pkg.main !== 'dist/index.js') errors.push('main must point at dist/index.js');
 if (pkg.bin?.airlock !== 'dist/index.js') errors.push('bin.airlock must point at dist/index.js');
 
+// docs/INSTALL.md pins a release version for the tarball install path; it must
+// never drift from the shipped version. A bare value bump re-drifts at the next
+// release, so the durable fix is this gate, not the bump.
+try {
+  const m = fs.readFileSync(relPath('docs/INSTALL.md'), 'utf8').match(/\$version\s*=\s*"([^"]+)"/);
+  if (m && m[1] !== pkg.version) errors.push(`docs/INSTALL.md pins v${m[1]} but package.json is ${pkg.version}`);
+} catch { /* absence is covered by the required-file checks above */ }
+
 for (const field of ['prepare', 'prepack', 'prepublishOnly', 'package:check', 'smoke:install']) {
   if (!pkg.scripts?.[field]) errors.push(`missing npm script: ${field}`);
 }

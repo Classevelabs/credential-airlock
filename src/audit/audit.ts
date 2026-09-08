@@ -105,6 +105,19 @@ export class AuditLog {
       }
     }
     if (tip && typeof tip.seq === 'number' && tip.seq > this.seq) {
+      // Distinguish an interrupted ROTATION from a truncation ATTACK before
+      // flagging tamper. rotateIfNeeded() renames the live log to an archive,
+      // resets the chain, then writes the seq-1 rollover; a crash in that window
+      // leaves the tip anchoring the ARCHIVED tail (a high seq) while the fresh
+      // audit.jsonl is empty/seq-1. Those entries are in the archive, not
+      // deleted, so finish the rotation rather than stamp a permanent false
+      // tamper flag. A genuine truncation leaves no archive whose tail the tip
+      // matches, so real detection below is not weakened.
+      const archivedTail = this.newestArchiveTail();
+      if (archivedTail && archivedTail.seq === tip.seq && archivedTail.hash === tip.hash) {
+        this.writeTip(); // anchor the fresh post-rotation log; the archive holds the rest
+        return;
+      }
       // The anchored tip is AHEAD of the durable log => committed entries were
       // removed. Record a STICKY tamper marker so a subsequent append can't
       // launder the chain back to ok. Leave the ahead tip in place too.
@@ -136,6 +149,26 @@ export class AuditLog {
       fs.writeFileSync(this.p.auditTip, JSON.stringify({ seq: this.seq, hash: this.lastHash }), { mode: 0o600 });
     } catch {
       /* tip is best-effort; never let it block auditing */
+    }
+  }
+
+  /** The seq+hash of the last entry in the newest rotation archive, or null.
+   *  Lets syncTip() tell an interrupted rotation apart from a truncation attack. */
+  private newestArchiveTail(): { seq: number; hash: string } | null {
+    try {
+      const dir = path.dirname(this.p.audit);
+      const archives = fs.readdirSync(dir).filter((f) => /^audit\.\d+\.jsonl$/.test(f)).sort();
+      if (!archives.length) return null;
+      const buf = readFileOpt(path.join(dir, archives[archives.length - 1]));
+      if (!buf) return null;
+      const lines = buf.toString('utf8').split('\n').filter((l) => l.trim());
+      if (!lines.length) return null;
+      const last = JSON.parse(lines[lines.length - 1]) as { seq?: number; hash?: string };
+      return typeof last.seq === 'number' && typeof last.hash === 'string'
+        ? { seq: last.seq, hash: last.hash }
+        : null;
+    } catch {
+      return null;
     }
   }
 

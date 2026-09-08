@@ -33,9 +33,23 @@ export class KeychainSealer implements Sealer {
   async seal(plaintext: Buffer): Promise<Buffer> {
     const account = 'k_' + crypto.randomBytes(8).toString('hex');
     const value = plaintext.toString('base64');
-    // -U updates if present; store base64 value.
-    const res = sec(['add-generic-password', '-a', account, '-s', SERVICE, '-w', value, '-U', '-T', '']);
-    if (res.status !== 0) throw new Error(`Keychain store failed: ${res.stderr.trim()}`);
+    // The sealed payload (the VDK, and each raw Shamir share during migration)
+    // must NOT go on argv: on macOS argv is readable by any same-user process via
+    // `ps -Ao args`, and AgentLauncher runs the untrusted agent as the same user —
+    // it could lift the VDK and decrypt vault.enc. `-w <value>` puts it on argv;
+    // `-w` bare does not reliably read piped stdin across `security` builds. So
+    // drive `security` in interactive mode (`-i`) and feed the whole command,
+    // value included, on stdin — only `security -i` appears in the process table.
+    // base64 has no character security's -i tokenizer treats specially.
+    const store = sec(['-i'], `add-generic-password -a ${account} -s ${SERVICE} -U -T "" -w ${value}\n`);
+    if (store.status !== 0) throw new Error(`Keychain store failed: ${store.stderr.trim() || store.status}`);
+    // `security -i` can exit 0 even when the sub-command failed, so confirm the
+    // value actually persisted. The read-back argv carries only the non-secret
+    // account ref; the value comes back on stdout, never on argv.
+    const back = sec(['find-generic-password', '-a', account, '-s', SERVICE, '-w']);
+    if (back.status !== 0 || back.stdout.trim() !== value) {
+      throw new Error('Keychain store did not persist the sealed value');
+    }
     return Buffer.from(JSON.stringify({ ref: account }), 'utf8');
   }
 

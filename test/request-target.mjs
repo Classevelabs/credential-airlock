@@ -104,6 +104,14 @@ assert.equal(norm('*'), '*');
 check('control characters are refused');
 assert.throws(() => normalizeRequestTarget('/v1/x\r\nX-Injected: 1'), InvalidRequestTarget);
 assert.throws(() => normalizeRequestTarget('/v1/x\0'), InvalidRequestTarget);
+assert.throws(() => normalizeRequestTarget('/v1/x\t'), InvalidRequestTarget);
+assert.throws(() => normalizeRequestTarget('/v1/x\x7f'), InvalidRequestTarget);
+
+check('a backslash, a fragment and an encoded null are refused, not guessed at');
+assert.throws(() => normalizeRequestTarget('/v1\\refunds'), InvalidRequestTarget);
+assert.throws(() => normalizeRequestTarget('/v1/refunds#/../charges'), InvalidRequestTarget);
+assert.throws(() => normalizeRequestTarget('/v1/ref%00unds'), InvalidRequestTarget);
+assert.throws(() => normalizeRequestTarget('/v1/refunds%00'), InvalidRequestTarget);
 
 check('a protocol-relative target that looks like an authority is refused');
 assert.throws(() => normalizeRequestTarget('//evil.example/v1/refunds'), InvalidRequestTarget);
@@ -132,8 +140,15 @@ const engine = new PolicyEngine({
 });
 
 const BYPASSES = [
+  // Wire-path transforms (closed in 0.1.2).
   '/v1/refunds/', '//v1/refunds', '/v1/%72efunds', '/v1/./refunds',
   '/v1/x/../refunds', '/v1//refunds', '/v1/./x/../%72efunds',
+  // Origin path-equivalences folded for matching only (0.1.4): case, matrix
+  // params, trailing dot, encoded trailing whitespace, and encoded separators
+  // an AllowEncodedSlashes/decoding origin resolves back to the guarded path.
+  '/V1/REFUNDS', '/v1/refunds;x=1', '/v1/REFUNDS;a=b/', '/v1/refunds.',
+  '/v1/refunds%2e', '/v1/refunds%20', '/v1/refunds%09', '/v1/refunds..;/',
+  '/v1%2Frefunds', '/v1%2frefunds', '/v1/x%2F%2E%2E%2Frefunds', '/V1%2FREFUNDS;x=1',
 ];
 
 check('the canonical spelling is denied (control)');
@@ -151,6 +166,14 @@ for (const raw of BYPASSES) {
 check('a genuinely different resource is still allowed');
 assert.equal(engine.evaluate({ host: 'api.stripe.com', method: 'POST', path: norm('/v1/charges'), body: null }).action, 'allow');
 assert.equal(engine.evaluate({ host: 'api.stripe.com', method: 'GET', path: norm('/v1/refunds'), body: null }).action, 'allow');
+
+check('folding must not over-deny a legitimately different neighbour');
+for (const p of ['/v1/refunds-report', '/v1/refunded', '/v1/refunds2', '/v1/refundsx',
+  '/v1/charges', '/v1/objects/a%2Fb', '/v1/refunds-report%2Fx']) {
+  assert.equal(
+    engine.evaluate({ host: 'api.stripe.com', method: 'POST', path: norm(p), body: null }).action,
+    'allow', p + ' was wrongly denied by the path fold');
+}
 
 flush();
 console.log(`\nRequest-target normalisation: ${passed} assertions passed`);

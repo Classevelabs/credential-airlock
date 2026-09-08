@@ -35,6 +35,7 @@ export interface Paths {
   config: string;
   vaultEnc: string;
   vdkSeal: string;
+  vdkSealNext: string;
   manifest: string;
   policy: string;
   audit: string;
@@ -52,6 +53,7 @@ export function paths(root = dataDir()): Paths {
     config: path.join(root, 'config.json'),
     vaultEnc: path.join(root, 'vault.enc'),
     vdkSeal: path.join(root, 'vdk.seal'),
+    vdkSealNext: path.join(root, 'vdk.seal.next'),
     manifest: path.join(root, 'manifest.json'),
     policy: path.join(root, 'policy.json'),
     audit: path.join(root, 'audit.jsonl'),

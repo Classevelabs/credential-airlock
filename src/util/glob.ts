@@ -31,7 +31,12 @@ export function matchHost(pattern: string, host: string): boolean {
 }
 
 export function matchPath(pattern: string, p: string): boolean {
-  return compile(pattern, '').test(p);
+  // Case-INSENSITIVE, like matchHost. A path rule guards a resource, and many
+  // origins the proxy fronts resolve paths case-insensitively (IIS/.NET, most
+  // CDNs), so a case-sensitive matcher let `/V1/REFUNDS` slip a deny/cap/approval
+  // rule written for `/v1/refunds` and still reach the same resource upstream.
+  // Folding case only ever widens what a rule matches, never what is forwarded.
+  return compile(pattern, 'i').test(p);
 }
 
 export function matchAnyHost(patterns: string[] | undefined, host: string): boolean {

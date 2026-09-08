@@ -153,9 +153,15 @@ const CHILD_CODE_INJECTION_ENV = new Set([
   'PERL5OPT',
 ]);
 
-/** A `*_URL`/`*_URI` carrying userinfo, or a database DSN, is a credential. */
-function credentialBearingUrl(name: string, value: string): boolean {
-  if (!/(?:URL|URI)$/i.test(name)) return false;
+/**
+ * A URL carrying userinfo, or a database/broker DSN, is a credential — under ANY
+ * name. Gating on a `*_URL`/`*_URI` name let the whole DSN class through under
+ * any other name (`DATABASE_CONNECTION=postgres://user:pass@host/db`,
+ * `BROKER=amqps://u:p@host`), so it is inspected by value alone now. Over-strips
+ * a bare `postgres://host/db` — which is the fail-safe direction: the airlock's
+ * job is to keep configury out of the untrusted child, not smuggle it in.
+ */
+function credentialBearingUrl(value: string): boolean {
   try {
     const parsed = new URL(value);
     return !!parsed.username || !!parsed.password ||
@@ -183,7 +189,7 @@ export function sensitiveEnvName(name: string, value: string): boolean {
     (INHERITED_SECRET_SUBSTRING.test(upper) && !INNOCENT_SUBSTRING_NAMES.test(upper)) ||
     INHERITED_KEY_WORD.test(upper) ||
     /(?:^|_)(?:PAT|COOKIE|SESSION|DSN)(?:$|_)/i.test(upper) ||
-    credentialBearingUrl(upper, value) ||
+    credentialBearingUrl(value) ||
     credentialShapedValue(value);
 }
 

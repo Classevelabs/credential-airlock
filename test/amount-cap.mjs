@@ -67,6 +67,16 @@ check('the query alone still enforces the cap when the body has none');
 assert.equal(ev('/v1/charges?amount=100', null).action, 'allow');
 assert.equal(ev('/v1/charges?amount=999999', null).action, 'deny');
 
+// Regression: a duplicate over-cap query key on a NON-mutating GET (no body, so
+// the mutating/body fail-closed net does not fire) used to read as "absent" and
+// fall through to allow. It must be refused, symmetric to the body path.
+check('THE QUERY BYPASS (GET, no body): a duplicate over-cap query key is refused, not read as absent');
+const evGet = (p) => engine.evaluate({ host: 'api.stripe.com', method: 'GET', path: p, body: null, contentType: undefined });
+assert.equal(evGet('/v1/charges?amount=1&amount=999999').action, 'deny', 'duplicate query amount read as absent on GET - cap bypassed');
+assert.equal(evGet('/v1/charges?amount=notanumber').action, 'deny', 'non-numeric query amount read as absent on GET - cap bypassed');
+assert.equal(evGet('/v1/charges?amount=999999').action, 'deny', 'single over-cap query denied on GET (control)');
+assert.equal(evGet('/v1/charges?amount=100').action, 'allow', 'under-cap query allowed on GET (control)');
+
 check('a dotted cap is not satisfied by a bare top-level query param');
 const nested = engineFor('transfer_data.amount');
 const nev = (p, b, ct) => nested.evaluate({ host: 'api.stripe.com', method: 'POST', path: p, body: b, contentType: ct });

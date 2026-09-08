@@ -8,6 +8,7 @@
 import { Paths } from '../config';
 import { Sealer, VaultData, SecretMeta, SecretWithValue, InjectionSpec } from '../types';
 import { aesgcmEncrypt, aesgcmDecrypt, randomKey } from '../crypto/aesgcm';
+import { rmSync } from 'node:fs';
 import { atomicWrite, readFileOpt, exists } from '../util/fsx';
 import { registerRedaction, clearRedactions } from '../util/logger';
 import { assertInjectableSecret } from '../util/secret-validate';
@@ -99,8 +100,23 @@ export class Vault {
     if (!sealedVdk) throw new Error('vdk.seal not found — run `airlock init` first');
     const enc = readFileOpt(p.vaultEnc);
     if (!enc) throw new Error('vault.enc not found — run `airlock init` first');
-    const vdk = await sealer.unseal(sealedVdk);
-    const plain = aesgcmDecrypt(vdk, enc, VAULT_AAD);
+    let vdk = await sealer.unseal(sealedVdk);
+    let plain: Buffer;
+    try {
+      plain = aesgcmDecrypt(vdk, enc, VAULT_AAD);
+    } catch (e) {
+      // A rekey that re-encrypted vault.enc under the NEW vdk but crashed before
+      // promoting vdk.seal leaves the live seal on the OLD vdk, which cannot
+      // decrypt the NEW-vdk vault.enc. Finish that rekey from the staged seal.
+      const pending = readFileOpt(p.vdkSealNext);
+      if (!pending) throw e;
+      const nextVdk = await sealer.unseal(pending);
+      plain = aesgcmDecrypt(nextVdk, enc, VAULT_AAD); // throws on genuine corruption
+      vdk.fill(0);
+      vdk = nextVdk;
+      atomicWrite(p.vdkSeal, pending);                // promote the staged seal
+      try { rmSync(p.vdkSealNext, { force: true }); } catch { /* best effort */ }
+    }
     let data: VaultData;
     try {
       data = JSON.parse(plain.toString('utf8')) as VaultData;
@@ -134,12 +150,20 @@ export class Vault {
 
   /** Re-encrypt the vault under a new VDK and reseal it (used by migration). */
   async rekey(newVdk: Buffer, sealer: Sealer): Promise<void> {
-    const sealed = await sealer.seal(newVdk); // may throw — seal BEFORE re-encrypting; old state stays openable
+    // Crash-atomic across two mutually-dependent files. Re-encrypting vault.enc
+    // under the NEW vdk and then resealing vdk.seal are separate renames; a crash
+    // between them used to leave vault.enc under the NEW vdk while vdk.seal still
+    // yielded the OLD one — vault.enc then unopenable (data loss). Stage the new
+    // seal first, re-encrypt, then promote, so a seal that opens whatever
+    // vault.enc is on disk always exists and open() can self-heal.
+    const sealed = await sealer.seal(newVdk); // may throw; old state stays openable
     const old = this.vdk;
+    atomicWrite(this.p.vdkSealNext, sealed);  // 1. stage NEW seal; live vdk.seal untouched
     this.vdk = newVdk;
-    this.persistVault();
-    atomicWrite(this.p.vdkSeal, sealed);
-    if (old && old !== newVdk) old.fill(0); // wipe the superseded key
+    this.persistVault();                      // 2. vault.enc now under NEW vdk
+    atomicWrite(this.p.vdkSeal, sealed);       // 3. promote live vdk.seal := NEW
+    try { rmSync(this.p.vdkSealNext, { force: true }); } catch { /* stale next is inert; healed on open */ }
+    if (old && old !== newVdk) old.fill(0);   // wipe the superseded key
   }
 
   // --- secrets (WRITE-ONLY; no reveal) -----------------------------------
