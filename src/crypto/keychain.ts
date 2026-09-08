@@ -33,8 +33,15 @@ export class KeychainSealer implements Sealer {
   async seal(plaintext: Buffer): Promise<Buffer> {
     const account = 'k_' + crypto.randomBytes(8).toString('hex');
     const value = plaintext.toString('base64');
-    // -U updates if present; store base64 value.
-    const res = sec(['add-generic-password', '-a', account, '-s', SERVICE, '-w', value, '-U', '-T', '']);
+    // The sealed payload (the VDK, and each raw Shamir share during migration)
+    // must NOT go on argv: on macOS argv is readable by any same-user process
+    // via `ps -Ao args`, and AgentLauncher runs the untrusted agent as the same
+    // user — it could lift the VDK and decrypt vault.enc. Pass `-w` with no
+    // inline value and feed the secret on stdin (readpassphrase falls back from
+    // /dev/tty to stdin for a child with no controlling terminal), so it never
+    // appears in the process argument table. Mirrors dpapi.ts (stdin). -U updates
+    // an existing item. Verified on darwin by keychain.smoke's ps-argv assertion.
+    const res = sec(['add-generic-password', '-a', account, '-s', SERVICE, '-U', '-T', '', '-w'], value + '\n');
     if (res.status !== 0) throw new Error(`Keychain store failed: ${res.stderr.trim()}`);
     return Buffer.from(JSON.stringify({ ref: account }), 'utf8');
   }

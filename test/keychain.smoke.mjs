@@ -10,6 +10,7 @@
  * Skips cleanly on non-darwin.
  */
 import { spawnSync } from 'child_process';
+import cp from 'child_process';
 import os from 'os';
 import path from 'path';
 import { createRequire } from 'module';
@@ -58,7 +59,30 @@ async function main() {
 
   const sealer = new KeychainSealer();
   const secret = Buffer.from('hello-keychain-round-trip-payload');
-  const sealed = await sealer.seal(secret);
+  const secretB64 = secret.toString('base64');
+
+  // No-leak gate: the payload must reach `security` on stdin, never on argv —
+  // argv is readable by any same-user process via `ps` on macOS, and the
+  // launched agent runs as that user. Spy the security invocations during seal
+  // and fail if the base64 value ever appears in an argument vector.
+  const origSpawn = cp.spawnSync;
+  const securityArgvs = [];
+  cp.spawnSync = (file, args, opts) => {
+    if (file === 'security' && Array.isArray(args)) securityArgvs.push(args.slice());
+    return origSpawn(file, args, opts);
+  };
+  let sealed;
+  try {
+    sealed = await sealer.seal(secret);
+  } finally {
+    cp.spawnSync = origSpawn;
+  }
+  for (const args of securityArgvs) {
+    if (args.some((a) => typeof a === 'string' && a.includes(secretB64))) {
+      console.error('FAIL  keychain seal placed the secret on the security argv (ps-readable leak)');
+      process.exit(1);
+    }
+  }
   const out = await sealer.unseal(sealed);
 
   if (!Buffer.isBuffer(out) || !out.equals(secret)) {

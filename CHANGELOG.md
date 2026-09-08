@@ -6,6 +6,18 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-09-09
+
+### Security
+- **The macOS Keychain sealer no longer places the sealed key on the process
+  command line.** `add-generic-password` received the base64 vault data key
+  (and, during migration, each raw Shamir share) as a `-w <value>` argv token;
+  on macOS a process's arguments are readable by any same-user process via `ps`,
+  and a launched agent runs as that same user — it could read the key and decrypt
+  the vault. The value is now fed to `security` on stdin, the way the Windows
+  DPAPI sealer already works, so it never enters the argument table. A `ps`-argv
+  assertion in the macOS Keychain smoke test locks it shut.
+
 ## [0.1.4] - 2026-09-08
 
 ### Security
@@ -295,7 +307,8 @@ findings. All fixes covered by 24 new test assertions (now 209 total, all green)
   key-leak (now fails closed) and node-forge CVEs (upgraded to 1.4.0,
   `npm audit` clean). Full evidence in [docs/AUDIT.md](docs/AUDIT.md).
 
-[Unreleased]: https://github.com/Classevelabs/credential-airlock/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/Classevelabs/credential-airlock/compare/v0.1.5...HEAD
+[0.1.5]: https://github.com/Classevelabs/credential-airlock/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/Classevelabs/credential-airlock/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/Classevelabs/credential-airlock/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/Classevelabs/credential-airlock/compare/v0.1.1...v0.1.2
