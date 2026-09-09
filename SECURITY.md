@@ -6,7 +6,7 @@ highest-priority work and we hold ourselves to an honest, coordinated process.
 ## Honest status
 
 This build has been through **eight internal adversarial review rounds** and a
-**209-assertion automated test suite** (see [docs/AUDIT.md](docs/AUDIT.md)). It
+**full automated test suite** (see [docs/AUDIT.md](docs/AUDIT.md)). It
 has **not** yet had an independent third-party penetration test. We have prepared
 a turnkey scope for one in [docs/PENTEST.md](docs/PENTEST.md). Until that is
 signed off, do not treat Credential Airlock as certified to hold a third party's

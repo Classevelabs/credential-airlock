@@ -13,7 +13,7 @@ guarantee and overdelivering the execution.
 > launch-hardening audit, one fresh-perspective whole-product audit, one
 > advanced internals/exploit-chain audit, and one response-lifecycle & validation
 > audit) and a
-> 209-assertion automated test suite. It has **not**
+> full automated test suite. It has **not**
 > had an independent third-party penetration test. Do that before making any public security claim
 > or holding a third party's credentials. See [THREAT-MODEL.md](THREAT-MODEL.md).
 
@@ -45,7 +45,7 @@ Review process:
   same against each prior round's fixes.
 - **Automated evidence.** Deterministic unit/property tests, an end-to-end TLS
   interception suite, an end-to-end migration-ceremony test, a red-team
-  integration suite, and a backup/restore suite — 209 assertions total, run by
+  integration suite, and a backup/restore suite, run by
   `npm test` — plus a sustained-load soak (`npm run loadtest`).
 - **Real-browser verification.** The actual control panel was driven in a real
   browser: auth enforcement, API round-trips, an XSS probe, and the CSP/security
@@ -232,18 +232,23 @@ verified" holds on every plane that carries a key.
 
 ## 3. Evidence (automated)
 
-Run `npm test` (builds, then runs all six suites). Current result: **209
-assertions, 0 failures** (the 9 `wincmd` assertions run on win32; a macOS
-Keychain smoke skips on other platforms). The breakdown below sums to 209.
+Run `npm test` — it builds, then runs the full suite (the `wincmd` assertions
+run on win32; the macOS Keychain sealer smoke runs on darwin CI). `npm test`'s
+own output is the authoritative, current assertion count; the per-suite figures
+below show what each suite covers and are indicative, not a frozen total.
 
 | Suite | Assertions | Covers |
 |-------|-----------:|--------|
-| `test/unit.mjs` | 114 | Shamir (400 fuzzed round-trips + the k-of-N threshold property + edge cases + `x=0` rejection), AES-256-GCM (tamper/IV-uniqueness/AAD), HKDF/scrypt, glob anti-bypass anchoring, policy (deny-by-default, amount fail-closed incl. negative/query/duplicate-key, rate-limit, `windowSec=0` fail-closed), migration-share encode/decode + forgery rejection, injection host-binding, audit-chain tamper detection, Windows command-line quoting (DEP0190-safe + cmd-metacharacter neutralization). |
+| `test/unit.mjs` | 115 | Shamir (400 fuzzed round-trips + the k-of-N threshold property + edge cases + `x=0` rejection), AES-256-GCM (tamper/IV-uniqueness/AAD), HKDF/scrypt, glob anti-bypass anchoring, policy (deny-by-default, amount fail-closed incl. negative/query/duplicate-key, rate-limit, `windowSec=0` fail-closed), migration-share encode/decode + forgery rejection, injection host-binding, audit-chain tamper detection, Windows command-line quoting (DEP0190-safe + cmd-metacharacter neutralization). |
 | `test/e2e.mjs` | 44 | Real TLS-interception path: header + placeholder-in-body injection, **deny-by-default egress**, amount caps (6 bypass variants), human approval (approve/deny), audit chain + tip + sticky-tamper, secret-never-on-disk/in-audit, **response scrubbing** (gzip decompress+scrub, octet-stream body, **fake-`Content-Encoding` fails closed**, **zip-bomb fails closed**, HEAD content-length). |
 | `test/migration.mjs` | 8 | Full 2-of-3 ceremony **end to end** across a simulated new machine: the real secret recovered from passphrase + offline share, the old machine-bound share correctly unusable, both negative cases (one factor / wrong passphrase) fail closed, `config.sealer` re-keyed. |
 | `test/redteam.mjs` | 15 | Active attacks: **injection keyed on CONNECT target not spoofed `Host`**, cross-secret isolation, placeholder-not-injected-to-non-allowed-host, **connection-reuse target integrity**, egress deny, **SSRF private-IP refusal**, admin plane (**no reveal route**, token required, **DNS-rebind Host rejected**, path-traversal blocked). |
 | `test/backup.mjs` | 19 | Sealed backup/restore: round-trip fidelity, clobber refusal (no `--force`), **name allowlist / path-traversal / `shares` `.`/`..` / Windows-illegal-name refused**, per-file integrity, **two-pass atomicity** (a bad entry writes nothing), bounded/format-checked decompression, and the write-lock creating a fresh data dir. |
 | `test/wincmd.spawn.mjs` | 9 _(win32)_ | Real `cmd.exe` spawn proof: the DEP0190-safe Windows command-line quoting actually round-trips through a live `.cmd` shim — argument boundaries preserved and shell metacharacters (`& \| < > ( ) ^`) neutralized. Skips on non-Windows. |
+| `test/env-scrub.mjs` | 45 | Ambient-credential scrub: a launched agent never inherits third-party secrets — matched by name (exact/word/substring), by a bare `_KEY` suffix, or by value shape (provider token / DSN under any name / PEM) — and code-injection env vars (`NODE_OPTIONS`, `LD_PRELOAD`, …) are stripped. |
+| `test/vault-version.mjs` | 10 | Vault on-disk version gating: an unknown or newer vault version is refused rather than mis-read. |
+| `test/request-target.mjs` | 20 | Request-target normalization and the path-equivalence folds (case, matrix params, trailing dot / encoded C0+whitespace, encoded separators) so a path-scoped rule cannot be evaded by an equivalent spelling. |
+| `test/amount-cap.mjs` | 12 | Amount-cap enforcement across both body and query, failing closed on a duplicate/ambiguous or non-numeric amount in either location. |
 
 Dependency audit: `npm run audit` → **0 vulnerabilities** (single runtime dep
 `node-forge@1.4.0`).
@@ -305,7 +310,7 @@ From the product brief, status as of this build:
 - [x] Minimal, pinned dependencies; `npm audit` clean (single dep `node-forge@1.4.0`).
 - [x] Deny-by-default egress; no network-exposed admin/reveal endpoint; loopback-only control plane.
 - [x] Internal automated tests + multi-round adversarial review (eight rounds).
-- [x] CI gates build + the 209-assertion suite + `npm audit` on **Linux/macOS/Windows × Node 20/22/24**, with a weekly advisory canary.
+- [x] CI gates build + the full suite + `npm audit` on **Linux/macOS/Windows × Node 20/22/24**, with a weekly advisory canary.
 - [x] Release attestation: CI emits a **CycloneDX SBOM + SHA-256 checksums + a SLSA build-provenance attestation** per tagged release. (Bit-for-bit reproducibility is not claimed; the toolchain is pinned.)
 - [x] Run the proxy as its own unprivileged user/namespace: a **distroless non-root container**, a **sandboxed systemd unit**, and a **non-elevated Windows task** are provided ([DEPLOY.md](DEPLOY.md)).
 - [ ] **Third-party penetration test** (required before any public security claim). Turnkey scope: [PENTEST.md](PENTEST.md).

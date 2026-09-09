@@ -18,10 +18,6 @@ this project adheres to [Semantic Versioning](https://semver.org/).
   stdin, with a read-back self-check, so it never enters the argument table and a
   masked store failure cannot pass. A `ps`-argv assertion plus a seal/unseal
   round-trip in the macOS Keychain smoke lock it shut on a real darwin runner.
-
-## [0.1.4] - 2026-09-08
-
-### Security
 - **A path-scoped rule can no longer be evaded by a spelling the origin treats
   as the same resource.** 0.1.2 folded the wire-path transforms; this closes the
   origin path-equivalences that are not wire transforms and so must not be
@@ -309,8 +305,7 @@ findings. All fixes covered by 24 new test assertions (now 209 total, all green)
   `npm audit` clean). Full evidence in [docs/AUDIT.md](docs/AUDIT.md).
 
 [Unreleased]: https://github.com/Classevelabs/credential-airlock/compare/v0.1.6...HEAD
-[0.1.6]: https://github.com/Classevelabs/credential-airlock/compare/v0.1.4...v0.1.6
-[0.1.4]: https://github.com/Classevelabs/credential-airlock/compare/v0.1.3...v0.1.4
+[0.1.6]: https://github.com/Classevelabs/credential-airlock/compare/v0.1.3...v0.1.6
 [0.1.3]: https://github.com/Classevelabs/credential-airlock/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/Classevelabs/credential-airlock/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Classevelabs/credential-airlock/compare/v0.1.0...v0.1.1
