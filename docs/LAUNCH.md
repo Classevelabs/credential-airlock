@@ -31,7 +31,7 @@ Legend: **[Gate]** = blocks launch · **[Stretch]** = better-than-industry, not 
 ### A. Correctness & test rigor
 | Criterion | Industry baseline | Our bar | Status |
 |---|---|---|---|
-| Automated tests, all green | "some tests" | **209 assertions** across unit/property, e2e TLS, migration ceremony, red-team, backup/restore (+ a Windows cmd.exe spawn proof) | **[Gate]** ✅ |
+| Automated tests, all green | "some tests" | **the full suite** across unit/property, e2e TLS, migration ceremony, red-team, backup/restore (+ a Windows cmd.exe spawn proof) | **[Gate]** ✅ |
 | CI on every push/PR | often none for OSS | **CI matrix: Linux + macOS + Windows x Node 20/22/24**, build+test+package check+`npm audit` blocking | **[Gate]** ✅ |
 | Cross-platform sealer exercised | rarely | Windows job runs **real DPAPI**; macOS job smoke-tests **Keychain**; passphrase path on all | **[Stretch]** ✅ |
 | Sustained-load / leak soak test | rarely | **load/soak test** asserts zero credential leak + bounded memory under concurrency | **[Stretch]** ✅ |
