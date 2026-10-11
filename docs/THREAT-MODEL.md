@@ -191,7 +191,8 @@ Be honest about these in any review:
   proxy to run as its own unprivileged user/namespace/container. Do it yourself
   before trusting it with anything important.
 - **Supply chain is the dominant risk.** The only runtime dependency is
-  `node-forge` (pinned `1.4.0`; `npm audit` clean); the integrity of it, of Node,
+  `node-forge` (pinned `1.4.0`; `npm run audit` gates it, and
+  `audit-exceptions.json` lists any advisory it carries and why); the integrity of it, of Node,
   and of PowerShell (used for DPAPI) is part of your trust base. Pin, review, and
   prefer signed, reproducible builds. Release artifacts include checksums, an SBOM,
   and build-provenance attestation; signed release tags and independently

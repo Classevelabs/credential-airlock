@@ -6,6 +6,19 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Security
+- **The dependency audit says what is true about an advisory with no fix.** An
+  advisory on node-forge's RSA signature verification
+  ([GHSA-86w9-cpqp-85rv](https://github.com/advisories/GHSA-86w9-cpqp-85rv))
+  has no fixed release. Airlock uses forge to make keys and sign its own
+  certificates and never asks it to verify a signature, so the flaw cannot be
+  reached here. `npm run audit` now fails on any advisory unless
+  `audit-exceptions.json` names it with its reason and the test that holds the
+  reason: `test/forge-surface.mjs` reads the one file that touches forge and
+  trips on any forge verify call while certificates are minted. The exception
+  ends by itself: the gate fails again once a fixed forge exists, or once npm
+  stops reporting the advisory.
+
 ## [0.1.6] - 2026-09-09
 
 ### Security

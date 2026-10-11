@@ -504,7 +504,9 @@ before you put it in front of someone else's credentials:
 
 - [x] **Minimal, pinned dependencies; review every one.** Supply chain is how
       LiteLLM-class incidents happen. (This build has a single runtime dep,
-      `node-forge`, pinned to `1.4.0`; `npm run audit` reports 0 vulnerabilities.)
+      `node-forge`, pinned to `1.4.0`. `npm run audit` fails on any advisory
+      against it unless `audit-exceptions.json` names the advisory, the reason
+      it cannot reach Airlock, and the test that holds that reason.)
 - [x] **Release artifacts a user can verify.** The release workflow produces a
       packed npm artifact, CycloneDX SBOM, SHA-256 checksums, and GitHub
       build-provenance attestation.

@@ -1,0 +1,8 @@
+[
+  {
+    "advisory": "GHSA-86w9-cpqp-85rv",
+    "package": "node-forge",
+    "reason": "The flaw is in forge's RSA signature verification. Airlock uses forge to make keys and sign its own certificates, and never asks it to verify a signature.",
+    "heldBy": "test/forge-surface.mjs"
+  }
+]

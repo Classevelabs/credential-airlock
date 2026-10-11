@@ -39,7 +39,7 @@ Legend: **[Gate]** = blocks launch · **[Stretch]** = better-than-industry, not 
 ### B. Supply chain & build integrity
 | Criterion | Industry baseline | Our bar | Status |
 |---|---|---|---|
-| `npm audit` clean | sometimes | **0 vulns**, single pinned runtime dep, audit is a **blocking CI gate** + weekly cron | **[Gate]** ✅ |
+| No advisory reaches what ships | sometimes | single pinned runtime dep, audit is a **blocking CI gate** + weekly cron; an exception must name its reason and the test that holds it | **[Gate]** ✅ |
 | Committed lockfile, pinned deps | usually | exact-pinned runtime dep + committed `package-lock.json` | **[Gate]** ✅ |
 | Installable npm artifact | often untested | public package metadata, tag-driven npm publish, and temp-prefix `airlock` binary smoke test | **[Gate]** ✅ |
 | SBOM published | rarely | **CycloneDX SBOM** built & attached to every release | **[Stretch]** ✅ |

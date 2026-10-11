@@ -248,10 +248,13 @@ below show what each suite covers and are indicative, not a frozen total.
 | `test/env-scrub.mjs` | 45 | Ambient-credential scrub: a launched agent never inherits third-party secrets — matched by name (exact/word/substring), by a bare `_KEY` suffix, or by value shape (provider token / DSN under any name / PEM) — and code-injection env vars (`NODE_OPTIONS`, `LD_PRELOAD`, …) are stripped. |
 | `test/vault-version.mjs` | 10 | Vault on-disk version gating: an unknown or newer vault version is refused rather than mis-read. |
 | `test/request-target.mjs` | 20 | Request-target normalization and the path-equivalence folds (case, matrix params, trailing dot / encoded C0+whitespace, encoded separators) so a path-scoped rule cannot be evaded by an equivalent spelling. |
+| `test/forge-surface.mjs` | 23 | What Airlock asks node-forge to do: one file imports it, every member that file touches is a known non-verifying one, and a tripwire on forge's RSA verify stays silent while a CA and leaf certificates are minted. Holds the reason behind `audit-exceptions.json`. |
 | `test/amount-cap.mjs` | 12 | Amount-cap enforcement across both body and query, failing closed on a duplicate/ambiguous or non-numeric amount in either location. |
 
-Dependency audit: `npm run audit` → **0 vulnerabilities** (single runtime dep
-`node-forge@1.4.0`).
+Dependency audit: `npm run audit` passes: no advisory reaches what ships
+(single runtime dep `node-forge@1.4.0`). An advisory the product cannot reach
+is carried only as an entry in `audit-exceptions.json` with its reason and the
+test that holds it, and the gate fails again once a fixed version exists.
 
 Real-browser verification (Chromium): token auth enforced (`200` with token,
 `401` without), API round-trips, an XSS probe (malicious agent name + secret
@@ -307,7 +310,7 @@ before multi-tenant or higher-assurance use:
 
 From the product brief, status as of this build:
 
-- [x] Minimal, pinned dependencies; `npm audit` clean (single dep `node-forge@1.4.0`).
+- [x] Minimal, pinned dependencies (single dep `node-forge@1.4.0`); `npm run audit` passes, any exception named in `audit-exceptions.json` with its reason and the test that holds it.
 - [x] Deny-by-default egress; no network-exposed admin/reveal endpoint; loopback-only control plane.
 - [x] Internal automated tests + multi-round adversarial review (eight rounds).
 - [x] CI gates build + the full suite + `npm audit` on **Linux/macOS/Windows × Node 20/22/24**, with a weekly advisory canary.

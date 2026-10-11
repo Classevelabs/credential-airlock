@@ -9,7 +9,7 @@ boundary is deliberately high. Read this before sending a PR.
 npm install
 npm run build        # tsc -> dist/
 npm test             # build + unit + e2e + migration + redteam + backup + wincmd (the full suite)
-npm run audit        # npm audit --omit=dev  (must report 0 vulnerabilities)
+npm run audit        # npm audit on what ships; fails on any advisory not excepted in audit-exceptions.json
 npm run package:check # verify public package metadata, files, and CLI shebang
 npm run smoke:install # pack, install into a temp npm prefix, and run airlock help
 npm run loadtest     # sustained no-leak / bounded-memory soak (optional, slower)
